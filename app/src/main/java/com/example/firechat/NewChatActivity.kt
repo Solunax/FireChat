@@ -21,7 +21,6 @@ class NewChatActivity : AppCompatActivity() {
     private lateinit var search : EditText
     private lateinit var userRecycler : RecyclerView
     private lateinit var db : FirebaseDatabase
-    private var lastBackPressedTime = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,6 +50,7 @@ class NewChatActivity : AppCompatActivity() {
         })
 
         setRecycler()
+        onBackPressedDispatcher.addCallback(this, backPressedCallback)
     }
 
     // 메모리 누수 방지를 위해 Destroy시 콜백을 비활성화
@@ -82,16 +82,11 @@ class NewChatActivity : AppCompatActivity() {
         userRecycler.adapter = UserSearchRecyclerAdapter(this)
     }
 
-    // 뒤로가기 버튼을 두번 클릭시 앱을 종료하는 기능을 수행하는 콜백
+    // 뒤로가기 버튼 클릭시 홈 화면으로 돌아감
     private val backPressedCallback = object : OnBackPressedCallback(true) {
         override fun handleOnBackPressed() {
-            if(System.currentTimeMillis() > lastBackPressedTime + 2000) {
-                lastBackPressedTime = System.currentTimeMillis()
-                Toast.makeText(this@NewChatActivity, "뒤로가기 버튼을 한번 더 누르면 앱이 종료됩니다.", Toast.LENGTH_SHORT).show()
-            } else {
-                backToHomeActivity()
-                finish()
-            }
+            backToHomeActivity()
+            finish()
         }
     }
 }

@@ -3,6 +3,7 @@ package com.example.firechat
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.TextView
@@ -39,7 +40,6 @@ class ChattingRoomActivity : AppCompatActivity() {
     private lateinit var opponentUser : User
     private lateinit var chatRoomKey : String
     lateinit var messageRecyclerView : RecyclerView
-    private var lastBackPressedTime = 0L
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -62,7 +62,7 @@ class ChattingRoomActivity : AppCompatActivity() {
         }
 
         setChattingRoom()
-        onBackPressedDispatcher.addCallback(this,backPressedCallback)
+        onBackPressedDispatcher.addCallback(this, backPressedCallback)
     }
 
     // 메모리 누수 방지를 위해 Destroy시 콜백을 비활성화
@@ -174,16 +174,11 @@ class ChattingRoomActivity : AppCompatActivity() {
         return localDateTime.format(dateTimeFormatter).toString()
     }
 
-    // 뒤로가기 버튼을 두번 클릭시 앱을 종료하는 기능을 수행하는 콜백
+    // 뒤로가기 버튼 클릭시 홈 화면으로 돌아감
     private val backPressedCallback = object : OnBackPressedCallback(true) {
         override fun handleOnBackPressed() {
-            if(System.currentTimeMillis() > lastBackPressedTime + 2000) {
-                lastBackPressedTime = System.currentTimeMillis()
-                Toast.makeText(this@ChattingRoomActivity, "뒤로가기 버튼을 한번 더 누르면 앱이 종료됩니다.", Toast.LENGTH_SHORT).show()
-            } else {
-                backToHomeActivity()
-                finish()
-            }
+            backToHomeActivity()
+            finish()
         }
     }
 }
