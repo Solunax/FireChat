@@ -41,7 +41,6 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
-    // 필드 초기화 메소드
     // Firebase auth를 로그인 사용해야 하기 때문에 인스턴스를 불러옴
     // sharedPreference로 마지막으로 성공한 로그인 유저의 ID와 PW를 자동으로 입력
     private fun initProperty() {
@@ -49,7 +48,6 @@ class LoginActivity : AppCompatActivity() {
         sharePreference = getSharedPreferences("loginData", MODE_PRIVATE)
     }
 
-    // View 초기화 메소드
     private fun initView() {
         inputEmail = binding.email
         inputPw = binding.pw
@@ -87,7 +85,7 @@ class LoginActivity : AppCompatActivity() {
     }
 
     // 로그인 성공시 화면 이동 메소드
-    // auth에 user 데이터가 null이 아니면 다음 메인 화면으로 전환
+    // auth에 user 데이터가 null이 아니면 홈 화면으로 전환
     private fun updateUI(user : FirebaseUser?) {
         user?.let {
             val editPreference = sharePreference.edit()

@@ -61,7 +61,7 @@ class RegisterActivity : AppCompatActivity() {
                 if(task.isSuccessful){
                     val user = auth.currentUser
                     val uid = user?.uid.toString()
-                    val userData = User(name, email)
+                    val userData = User(name, email, uid)
 
                     // 유저의 이름과 아이디를 DB에 저장
                     // 경로는 DB -> User -> UID(고유 아이디)
