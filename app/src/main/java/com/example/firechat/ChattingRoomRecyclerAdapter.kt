@@ -167,7 +167,7 @@ class ChattingRoomRecyclerAdapter : RecyclerView.Adapter<ChattingRoomRecyclerAda
     // 현재 사용자가 참여하고 있는 모든 채팅방의 정보를 가져옴
     private fun setChattingRooms() {
         FirebaseDatabase.getInstance().getReference("ChattingRoom")
-            .orderByChild("users/$uid").equalTo(true)
+            .orderByChild("users/$uid/joinState").equalTo(true)
             .addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     chattingRooms.clear()

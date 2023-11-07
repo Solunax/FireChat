@@ -3,17 +3,16 @@ package com.example.firechat
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.firechat.data.ChattingRoom
+import com.example.firechat.data.ChattingState
 import com.example.firechat.data.Message
 import com.example.firechat.data.User
 import com.example.firechat.databinding.ChattingRoomActivityBinding
@@ -23,6 +22,7 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import com.google.firebase.database.getValue
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.TimeZone
@@ -39,6 +39,7 @@ class ChattingRoomActivity : AppCompatActivity() {
     private lateinit var chatRoom : ChattingRoom
     private lateinit var opponentUser : User
     private lateinit var chatRoomKey : String
+    private var opponentUserOnlineState = false
     lateinit var messageRecyclerView : RecyclerView
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -53,7 +54,7 @@ class ChattingRoomActivity : AppCompatActivity() {
         // 뒤로가기 버튼을 누를시 메인 화면 Activity를 실행
         // 실행 후 현재 Activity 종료
         goBackButton.setOnClickListener {
-            backToHomeActivity()
+            changeOnlineState(false)
         }
 
         // 메세지 전송 버튼을 누를시 현재 입력한 메세지를 서버에 저장
@@ -65,9 +66,15 @@ class ChattingRoomActivity : AppCompatActivity() {
         onBackPressedDispatcher.addCallback(this, backPressedCallback)
     }
 
+    override fun onStop() {
+        super.onStop()
+        changeOnlineState(false)
+    }
+
     // 메모리 누수 방지를 위해 Destroy시 콜백을 비활성화
     override fun onDestroy() {
         super.onDestroy()
+
         backPressedCallback.isEnabled = false
     }
 
@@ -124,7 +131,7 @@ class ChattingRoomActivity : AppCompatActivity() {
     // 찾은 후 그 Key를 바탕으로 리사이클러 뷰(채팅방)을 구성함
     private fun setChatRoomKey() {
         FirebaseDatabase.getInstance().getReference("ChattingRoom")
-            .orderByChild("users/${opponentUser.uid}").equalTo(true)
+            .orderByChild("users/${opponentUser.uid}/joinState").equalTo(true)
             .addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     for (data in snapshot.children) {
@@ -149,7 +156,7 @@ class ChattingRoomActivity : AppCompatActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     private fun sendMessage() {
         if(messageInput.text.isNotEmpty()){
-            val message = Message(uid, getTimeData(), messageInput.text.toString())
+            val message = Message(uid, getTimeData(), messageInput.text.toString(), opponentUserOnlineState)
 
             FirebaseDatabase.getInstance().getReference("ChattingRoom")
                 .child(chatRoomKey).child("messages")
@@ -163,6 +170,24 @@ class ChattingRoomActivity : AppCompatActivity() {
     private fun setRecycler() {
         messageRecyclerView.layoutManager = LinearLayoutManager(this)
         messageRecyclerView.adapter = MessageRecyclerAdapter(this, chatRoomKey)
+        getOpponentOnlineState()
+        changeOnlineState(true)
+    }
+
+    private fun getOpponentOnlineState() {
+        FirebaseDatabase.getInstance().getReference("ChattingRoom")
+            .child(chatRoomKey).child("users")
+            .addValueEventListener( object : ValueEventListener{
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    for (data in snapshot.children) {
+                        if(data.key == opponentUser.uid)
+                            opponentUserOnlineState = data.getValue<ChattingState>()!!.onlineState
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                }
+            })
     }
 
     // Message 클래스 구성시 필요한 현재 시간 정보를 변환하는 메소드
@@ -174,11 +199,21 @@ class ChattingRoomActivity : AppCompatActivity() {
         return localDateTime.format(dateTimeFormatter).toString()
     }
 
+    private fun changeOnlineState(state : Boolean) {
+        FirebaseDatabase.getInstance().getReference("ChattingRoom")
+            .child(chatRoomKey).child("users")
+            .child(uid).setValue(ChattingState(true, state)).addOnSuccessListener {
+                if(!state){
+                    backToHomeActivity()
+                    finish()
+                }
+            }
+    }
+
     // 뒤로가기 버튼 클릭시 홈 화면으로 돌아감
     private val backPressedCallback = object : OnBackPressedCallback(true) {
         override fun handleOnBackPressed() {
-            backToHomeActivity()
-            finish()
+            changeOnlineState(false)
         }
     }
 }

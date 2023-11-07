@@ -2,12 +2,12 @@ package com.example.firechat
 
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.RecyclerView
 import com.example.firechat.data.ChattingRoom
+import com.example.firechat.data.ChattingState
 import com.example.firechat.data.User
 import com.example.firechat.databinding.UserSearchResultItemBinding
 import com.google.firebase.auth.FirebaseAuth
@@ -66,7 +66,6 @@ class UserSearchRecyclerAdapter(val context : Context) :
             userList = allUserList.clone() as ArrayList<User>
         } else {
             userList.clear()
-            Log.d("list", "$allUserList")
             val matchList = allUserList.filter { it.name!!.contains(name) }
             matchList.forEach {
                 userList.add(it)
@@ -98,10 +97,10 @@ class UserSearchRecyclerAdapter(val context : Context) :
         val opponent = userList[position]
         val db = FirebaseDatabase.getInstance().getReference("ChattingRoom")
         val chatRoom = ChattingRoom(
-            mapOf(Pair(currentUser.uid!!, true),
-                Pair(opponent.uid!!, true)), null)
+            mapOf(Pair(currentUser.uid!!, ChattingState(joinState = true, onlineState = true)),
+                Pair(opponent.uid!!, ChattingState(joinState = true, onlineState = false))), null)
 
-        db.orderByChild("users/${opponent.uid}").equalTo(true)
+        db.orderByChild("users/${opponent.uid}/joinState").equalTo(true)
             .addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     if(snapshot.value == null){
