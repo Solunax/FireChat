@@ -1,18 +1,14 @@
 package com.example.firechat
 
 import android.os.Bundle
+import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import com.example.firechat.data.User
 import com.example.firechat.databinding.RegisterActivityBinding
-import com.google.firebase.FirebaseNetworkException
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
-import com.google.firebase.auth.FirebaseAuthUserCollisionException
-import com.google.firebase.auth.FirebaseAuthWeakPasswordException
-import com.google.firebase.database.FirebaseDatabase
+import com.example.firechat.viewModel.AuthViewModel
 
 class RegisterActivity : AppCompatActivity() {
     private lateinit var binding : RegisterActivityBinding
@@ -20,15 +16,15 @@ class RegisterActivity : AppCompatActivity() {
     private lateinit var inputEmail : EditText
     private lateinit var inputPw : EditText
     private lateinit var registerButton : Button
-    private lateinit var auth : FirebaseAuth
+    private val viewModel : AuthViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = RegisterActivityBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        initView()
         initProperty()
+        initView()
 
         registerButton.setOnClickListener {
             attemptRegister()
@@ -38,7 +34,21 @@ class RegisterActivity : AppCompatActivity() {
     // 필드 초기화 메소드
     // Firebase auth를 회원가입에 사용해야 하기 때문에 인스턴스를 불러옴
     private fun initProperty() {
-        auth = FirebaseAuth.getInstance()
+        viewModel.event.observe(this) { event ->
+            event.getContentIfNotHandled()?.let { code ->
+                when (code) {
+                    "register success" -> {
+                        Log.d("activity", "Y")
+                        Toast.makeText(this, "회원가입에 성공했습니다.", Toast.LENGTH_SHORT).show()
+                        finish()
+                    }
+                    "register weak password" -> Toast.makeText(this, "비밀번호 강도가 너무 약합니다.", Toast.LENGTH_SHORT).show()
+                    "register email already use" -> Toast.makeText(this, "이미 사용중인 이메일 주소입니다.", Toast.LENGTH_SHORT).show()
+                    "register invalid email" -> Toast.makeText(this, "이메일 주소 형식에 맞지 않습니다.", Toast.LENGTH_SHORT).show()
+                    "register network error" -> Toast.makeText(this, "비밀번호 강도가 너무 약합니다.", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
     }
 
     // View 초기화 메소드
@@ -55,38 +65,8 @@ class RegisterActivity : AppCompatActivity() {
         val email = inputEmail.text.toString().trim()
         val pw = inputPw.text.toString().trim()
 
-        if (infoValidationCheck(name, email, pw)) {
-            // auth의 회원가입 메소드, addOnCompleteListener를 통해 task의 성공 여부에 따라 분기
-            auth.createUserWithEmailAndPassword(email, pw).addOnCompleteListener { task ->
-                if(task.isSuccessful){
-                    val user = auth.currentUser
-                    val uid = user?.uid.toString()
-                    val userData = User(name, email, uid)
-
-                    // 유저의 이름과 아이디를 DB에 저장
-                    // 경로는 DB -> User -> UID(고유 아이디)
-                    FirebaseDatabase.getInstance().getReference("User").child(uid)
-                        .setValue(userData)
-
-                    // 회원가입 성공시 현재 Activity를 종료함
-                    Toast.makeText(this, "회원가입에 성공했습니다.", Toast.LENGTH_SHORT).show()
-                    finish()
-                } else {
-                    val sb = StringBuilder("회원가입에 실패했습니다.")
-
-                    // 회원 가입 실패시 Exception의 error code에 따라서 사용자에게 메시지를 보여줌
-                    when (task.exception) {
-                        is FirebaseAuthWeakPasswordException -> sb.append("\n비밀번호가 너무 약합니다.")
-                        is FirebaseAuthUserCollisionException -> sb.append("\n이미 사용중인 이메일 입니다.")
-                        is FirebaseAuthInvalidCredentialsException -> sb.append("\n유효하지 않은 이메일 형식입니다")
-                        is FirebaseNetworkException -> sb.append("\n네트워크 연결에 실패했습니다.")
-                        else -> sb.append("\n${task.exception?.message}")
-                    }
-
-                    Toast.makeText(this, sb.toString(), Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
+        if (infoValidationCheck(name, email, pw))
+            viewModel.attemptRegister(name, email, pw)
     }
 
     // 회원 가입시 정보를 제대로 입력했는지 확인하기 위한 유효성 검사용 메소드

@@ -19,10 +19,11 @@ import com.google.firebase.database.getValue
 
 class UserSearchRecyclerAdapter(val context : Context) :
     RecyclerView.Adapter<UserSearchRecyclerAdapter.ViewHolder>() {
-    var userList = ArrayList<User>()
-    var allUserList = ArrayList<User>()
-    lateinit var uid : String
-    lateinit var currentUser : User
+    private var userList = ArrayList<User>()
+    private var allUserList = ArrayList<User>()
+    private lateinit var uid : String
+    private lateinit var currentUser : User
+    private val db = FirebaseDatabase.getInstance()
 
     // 리사이클러 뷰 초기화시 수행되는 메소드
     init {
@@ -34,7 +35,7 @@ class UserSearchRecyclerAdapter(val context : Context) :
     private fun setAllUser() {
         uid = FirebaseAuth.getInstance().currentUser?.uid.toString()
 
-        FirebaseDatabase.getInstance().getReference("User")
+        db.getReference("User")
             .addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     userList.clear()
@@ -95,16 +96,15 @@ class UserSearchRecyclerAdapter(val context : Context) :
     // 채팅방을 생성하지 않고 기존 채팅방으로 이동함
     private fun createChattingRoom(position: Int) {
         val opponent = userList[position]
-        val db = FirebaseDatabase.getInstance().getReference("ChattingRoom")
         val chatRoom = ChattingRoom(
             mapOf(Pair(currentUser.uid!!, ChattingState(joinState = true, onlineState = true)),
                 Pair(opponent.uid!!, ChattingState(joinState = true, onlineState = false))), null)
 
-        db.orderByChild("users/${opponent.uid}/joinState").equalTo(true)
+        db.getReference("ChattingRoom").orderByChild("users/${opponent.uid}/joinState").equalTo(true)
             .addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     if(snapshot.value == null){
-                        db.push().setValue(chatRoom).addOnSuccessListener {
+                        db.getReference("ChattingRoom").push().setValue(chatRoom).addOnSuccessListener {
                             moveToChattingRoom(chatRoom, opponent)
                         }
                     } else {

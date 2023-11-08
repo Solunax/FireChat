@@ -26,6 +26,7 @@ import java.util.TimeZone
 class ChattingRoomRecyclerAdapter : RecyclerView.Adapter<ChattingRoomRecyclerAdapter.ChattingRoomViewHolder>() {
     val chattingRooms = ArrayList<ChattingRoom>()
     val chattingRoomKeys = ArrayList<String>()
+    private val db = FirebaseDatabase.getInstance()
     private val uid = FirebaseAuth.getInstance().currentUser?.uid.toString()
 
     // 리사이클러 뷰 초기화시 수행되는 메소드
@@ -33,14 +34,17 @@ class ChattingRoomRecyclerAdapter : RecyclerView.Adapter<ChattingRoomRecyclerAda
         setChattingRooms()
     }
 
-    class ChattingRoomViewHolder(private val context : Context, private val binding : ChattingRoomRecyclerItemBinding) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(uid : String, chattingRoomData : ChattingRoom, key : String){
+    class ChattingRoomViewHolder(
+        private val context : Context,
+        private val binding : ChattingRoomRecyclerItemBinding
+    ) : RecyclerView.ViewHolder(binding.root) {
+        fun bind(db : FirebaseDatabase, uid : String, chattingRoomData : ChattingRoom, key : String){
             val userKeys = chattingRoomData.users!!.keys
             val opponentKey = userKeys.first { it != uid }
             lateinit var opponentUser : User
 
             // 현재 채팅방 정보중 상대방의 UID를 바탕으로 이름 정보를 가져옴
-            FirebaseDatabase.getInstance().getReference("User").orderByChild("uid")
+            db.getReference("User").orderByChild("uid")
                 .equalTo(opponentKey)
                 .addListenerForSingleValueEvent( object : ValueEventListener {
                     @RequiresApi(Build.VERSION_CODES.O)
@@ -152,7 +156,7 @@ class ChattingRoomRecyclerAdapter : RecyclerView.Adapter<ChattingRoomRecyclerAda
     }
 
     override fun onBindViewHolder(holder: ChattingRoomViewHolder, position: Int) {
-        holder.bind(uid, chattingRooms[position], chattingRoomKeys[position])
+        holder.bind(db, uid, chattingRooms[position], chattingRoomKeys[position])
     }
 
     override fun getItemId(position: Int): Long {
@@ -166,7 +170,7 @@ class ChattingRoomRecyclerAdapter : RecyclerView.Adapter<ChattingRoomRecyclerAda
     // 초기 채팅방을 설정하는 메소드
     // 현재 사용자가 참여하고 있는 모든 채팅방의 정보를 가져옴
     private fun setChattingRooms() {
-        FirebaseDatabase.getInstance().getReference("ChattingRoom")
+        db.getReference("ChattingRoom")
             .orderByChild("users/$uid/joinState").equalTo(true)
             .addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {

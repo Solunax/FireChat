@@ -22,6 +22,7 @@ class MessageRecyclerAdapter(
     val message = ArrayList<Message>()
     val messageKeys = ArrayList<String>()
     private val uid = FirebaseAuth.getInstance().uid
+    private val db = FirebaseDatabase.getInstance()
     val recyclerView = (context as ChattingRoomActivity).messageRecyclerView
 
     init {
@@ -37,7 +38,7 @@ class MessageRecyclerAdapter(
     // 채팅방의 고유 Key값에 맞는 채팅방에서 메세지들을 가져오는 메소드
     // 가져온 메세지는 message, messageKey 배열에 저장된다
     private fun getMessage() {
-        FirebaseDatabase.getInstance().getReference("ChattingRoom")
+        db.getReference("ChattingRoom")
             .child(chattingRoomKey).child("messages")
             .addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
@@ -165,7 +166,7 @@ class MessageRecyclerAdapter(
 
         // 사용자가 메세지를 읽었다는 State 값을 변경하는 메소드
         private fun setReadState(position: Int) {
-            FirebaseDatabase.getInstance().getReference("ChattingRoom")
+            db.getReference("ChattingRoom")
                 .child(chattingRoomKey).child("messages")
                 .child(messageKeys[position]).child("confirmed")
                 .setValue(true)

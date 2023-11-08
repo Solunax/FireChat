@@ -19,7 +19,6 @@ import com.example.firechat.databinding.ChattingRoomActivityBinding
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.getValue
@@ -34,13 +33,13 @@ class ChattingRoomActivity : AppCompatActivity() {
     private lateinit var messageInput : EditText
     private lateinit var opponentName : TextView
 
-    private lateinit var db : DatabaseReference
     private lateinit var uid : String
     private lateinit var chatRoom : ChattingRoom
     private lateinit var opponentUser : User
     private lateinit var chatRoomKey : String
     private var opponentUserOnlineState = false
     lateinit var messageRecyclerView : RecyclerView
+    private val db = FirebaseDatabase.getInstance()
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -83,7 +82,6 @@ class ChattingRoomActivity : AppCompatActivity() {
     // 정보는 채팅방 정보(사용자), 채팅방 고유 Key(ID), 상대방 UID를 포함함
     private fun initProperty() {
         uid = FirebaseAuth.getInstance().currentUser?.uid!!
-        db = FirebaseDatabase.getInstance().reference
         chatRoom = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             intent.getSerializableExtra("chatRoom", ChattingRoom::class.java)!!
         } else {
@@ -130,7 +128,7 @@ class ChattingRoomActivity : AppCompatActivity() {
     // 채팅 목록을 가져온 뒤, 현재 사용자와 원하는 상대방으로 구성된 채팅방 Key를 찾음
     // 찾은 후 그 Key를 바탕으로 리사이클러 뷰(채팅방)을 구성함
     private fun setChatRoomKey() {
-        FirebaseDatabase.getInstance().getReference("ChattingRoom")
+        db.getReference("ChattingRoom")
             .orderByChild("users/${opponentUser.uid}/joinState").equalTo(true)
             .addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
@@ -158,7 +156,7 @@ class ChattingRoomActivity : AppCompatActivity() {
         if(messageInput.text.isNotEmpty()){
             val message = Message(uid, getTimeData(), messageInput.text.toString(), opponentUserOnlineState)
 
-            FirebaseDatabase.getInstance().getReference("ChattingRoom")
+            db.getReference("ChattingRoom")
                 .child(chatRoomKey).child("messages")
                 .push().setValue(message)
                 .addOnSuccessListener {
@@ -175,7 +173,7 @@ class ChattingRoomActivity : AppCompatActivity() {
     }
 
     private fun getOpponentOnlineState() {
-        FirebaseDatabase.getInstance().getReference("ChattingRoom")
+        db.getReference("ChattingRoom")
             .child(chatRoomKey).child("users")
             .addValueEventListener( object : ValueEventListener{
                 override fun onDataChange(snapshot: DataSnapshot) {
@@ -200,7 +198,7 @@ class ChattingRoomActivity : AppCompatActivity() {
     }
 
     private fun changeOnlineState(state : Boolean) {
-        FirebaseDatabase.getInstance().getReference("ChattingRoom")
+        db.getReference("ChattingRoom")
             .child(chatRoomKey).child("users")
             .child(uid).setValue(ChattingState(true, state)).addOnSuccessListener {
                 if(!state){
