@@ -10,18 +10,16 @@ import com.example.firechat.data.ChattingRoom
 import com.example.firechat.data.ChattingState
 import com.example.firechat.data.User
 import com.example.firechat.databinding.UserSearchResultItemBinding
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.getValue
 
-class UserSearchRecyclerAdapter(val context : Context) :
+class UserSearchRecyclerAdapter(val context : Context, private val uid : String) :
     RecyclerView.Adapter<UserSearchRecyclerAdapter.ViewHolder>() {
     private var userList = ArrayList<User>()
     private var allUserList = ArrayList<User>()
-    private lateinit var uid : String
     private lateinit var currentUser : User
     private val db = FirebaseDatabase.getInstance()
 
@@ -33,8 +31,6 @@ class UserSearchRecyclerAdapter(val context : Context) :
     // 현재 DB에 존재하는 모든 사용자의 정보를 가져오는 메소드
     // 자기 자신은 제외하고 유저 목록 배열에 추가
     private fun setAllUser() {
-        uid = FirebaseAuth.getInstance().currentUser?.uid.toString()
-
         db.getReference("User")
             .addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
@@ -108,7 +104,10 @@ class UserSearchRecyclerAdapter(val context : Context) :
                             moveToChattingRoom(chatRoom, opponent)
                         }
                     } else {
-                        context.startActivity(Intent(context, HomeActivity::class.java))
+                        context.startActivity(
+                            Intent(context, HomeActivity::class.java)
+                                .putExtra("uid", uid)
+                        )
                         moveToChattingRoom(chatRoom, opponent)
                     }
                 }
@@ -125,6 +124,7 @@ class UserSearchRecyclerAdapter(val context : Context) :
         intent.putExtra("chatRoom", chattingRoom)
         intent.putExtra("opponent", opponent)
         intent.putExtra("chatRoomKey", "")
+        intent.putExtra("uid", uid)
 
         context.startActivity(intent)
         (context as AppCompatActivity).finish()

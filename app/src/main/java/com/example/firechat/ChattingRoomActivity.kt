@@ -16,7 +16,6 @@ import com.example.firechat.data.ChattingState
 import com.example.firechat.data.Message
 import com.example.firechat.data.User
 import com.example.firechat.databinding.ChattingRoomActivityBinding
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
@@ -49,8 +48,9 @@ class ChattingRoomActivity : AppCompatActivity() {
 
         initProperty()
         initView()
+        setChattingRoom()
 
-        // 뒤로가기 버튼을 누를시 메인 화면 Activity를 실행
+        // 뒤로가기 버튼을 누를시 홈 화면 Activity를 실행
         // 실행 후 현재 Activity 종료
         goBackButton.setOnClickListener {
             changeOnlineState(false)
@@ -61,19 +61,12 @@ class ChattingRoomActivity : AppCompatActivity() {
             sendMessage()
         }
 
-        setChattingRoom()
         onBackPressedDispatcher.addCallback(this, backPressedCallback)
-    }
-
-    override fun onStop() {
-        super.onStop()
-        changeOnlineState(false)
     }
 
     // 메모리 누수 방지를 위해 Destroy시 콜백을 비활성화
     override fun onDestroy() {
         super.onDestroy()
-
         backPressedCallback.isEnabled = false
     }
 
@@ -81,7 +74,7 @@ class ChattingRoomActivity : AppCompatActivity() {
     // 기입된 데이터를 바탕으로 채팅방을 구성함
     // 정보는 채팅방 정보(사용자), 채팅방 고유 Key(ID), 상대방 UID를 포함함
     private fun initProperty() {
-        uid = FirebaseAuth.getInstance().currentUser?.uid!!
+        uid = intent.getStringExtra("uid").toString()
         chatRoom = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             intent.getSerializableExtra("chatRoom", ChattingRoom::class.java)!!
         } else {
@@ -105,11 +98,6 @@ class ChattingRoomActivity : AppCompatActivity() {
         opponentName = binding.chattingRoomOpponentUserName
 
         opponentName.text = opponentUser.name
-    }
-
-    private fun backToHomeActivity() {
-        startActivity(Intent(this, HomeActivity::class.java))
-        finish()
     }
 
     // 채팅방 초기화 메소드
@@ -167,11 +155,12 @@ class ChattingRoomActivity : AppCompatActivity() {
 
     private fun setRecycler() {
         messageRecyclerView.layoutManager = LinearLayoutManager(this)
-        messageRecyclerView.adapter = MessageRecyclerAdapter(this, chatRoomKey)
+        messageRecyclerView.adapter = MessageRecyclerAdapter(this, chatRoomKey, uid)
         getOpponentOnlineState()
         changeOnlineState(true)
     }
 
+    // 상대방이 현재 채팅방을 보고있는(채팅방을 킨 상태인지) 상태 값을 메소드
     private fun getOpponentOnlineState() {
         db.getReference("ChattingRoom")
             .child(chatRoomKey).child("users")
@@ -197,21 +186,29 @@ class ChattingRoomActivity : AppCompatActivity() {
         return localDateTime.format(dateTimeFormatter).toString()
     }
 
-    private fun changeOnlineState(state : Boolean) {
-        db.getReference("ChattingRoom")
-            .child(chatRoomKey).child("users")
-            .child(uid).setValue(ChattingState(true, state)).addOnSuccessListener {
-                if(!state){
-                    backToHomeActivity()
-                    finish()
-                }
-            }
-    }
-
     // 뒤로가기 버튼 클릭시 홈 화면으로 돌아감
     private val backPressedCallback = object : OnBackPressedCallback(true) {
         override fun handleOnBackPressed() {
             changeOnlineState(false)
         }
+    }
+
+    // 현재 채팅방을 나갈시 현재 채팅방의 온라인 상태를 바꾸는 메소드
+    private fun changeOnlineState(state : Boolean) {
+        db.getReference("ChattingRoom")
+            .child(chatRoomKey).child("users")
+            .child(uid).setValue(ChattingState(true, state)).addOnSuccessListener {
+                if(!state)
+                    backToHomeActivity()
+            }
+    }
+
+    // Home Activity로 돌아가는 메소드
+    private fun backToHomeActivity() {
+        startActivity(
+            Intent(this, HomeActivity::class.java)
+                .putExtra("uid", uid)
+        )
+        finish()
     }
 }

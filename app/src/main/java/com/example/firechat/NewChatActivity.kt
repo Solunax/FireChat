@@ -6,21 +6,19 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.widget.EditText
 import android.widget.ImageButton
-import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.firechat.databinding.NewChatActivityBinding
-import com.google.firebase.database.FirebaseDatabase
 
 class NewChatActivity : AppCompatActivity() {
     private lateinit var binding : NewChatActivityBinding
     private lateinit var backButton : ImageButton
     private lateinit var search : EditText
     private lateinit var userRecycler : RecyclerView
-    private lateinit var db : FirebaseDatabase
+    private lateinit var uid : String
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,12 +58,15 @@ class NewChatActivity : AppCompatActivity() {
     }
 
     private fun backToHomeActivity() {
-        startActivity(Intent(this, HomeActivity::class.java))
+        startActivity(
+            Intent(this, HomeActivity::class.java)
+                .putExtra("uid", uid)
+        )
         finish()
     }
 
     private fun initProperty() {
-        db = FirebaseDatabase.getInstance()
+        uid = intent.getStringExtra("uid").toString()
     }
 
     private fun initView() {
@@ -79,7 +80,7 @@ class NewChatActivity : AppCompatActivity() {
         userRecycler.layoutManager = LinearLayoutManager(this)
         val decoration = DividerItemDecoration(applicationContext, DividerItemDecoration.VERTICAL)
         userRecycler.addItemDecoration(decoration)
-        userRecycler.adapter = UserSearchRecyclerAdapter(this)
+        userRecycler.adapter = UserSearchRecyclerAdapter(this, uid)
     }
 
     // 뒤로가기 버튼 클릭시 홈 화면으로 돌아감

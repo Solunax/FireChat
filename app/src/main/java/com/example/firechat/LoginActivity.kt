@@ -78,7 +78,6 @@ class LoginActivity : AppCompatActivity() {
     }
 
     // 로그인 성공시 화면 이동 메소드
-    // auth에 user 데이터가 null이 아니면 홈 화면으로 전환
     private fun updateUI() {
         val editPreference = sharePreference.edit()
 
@@ -86,7 +85,11 @@ class LoginActivity : AppCompatActivity() {
         editPreference.putString("pw", inputPw.text.toString().trim())
         editPreference.apply()
 
-        startActivity(Intent(this, HomeActivity::class.java))
+        // UID를 인텐트에 추가하여 넘겨줌
+        startActivity(
+            Intent(this, HomeActivity::class.java)
+            .putExtra("uid", viewModel.currentUserUID)
+        )
         finish()
     }
 

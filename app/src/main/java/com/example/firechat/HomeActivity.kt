@@ -5,27 +5,32 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.firechat.databinding.HomeActivityBinding
-import com.google.firebase.auth.FirebaseAuth
+import com.example.firechat.viewModel.AuthViewModel
 
 class HomeActivity : AppCompatActivity() {
     private lateinit var binding : HomeActivityBinding
     private lateinit var newChatButton : Button
     private lateinit var logoutButton : Button
     private lateinit var chattingRoomRecycler : RecyclerView
+    private lateinit var uid : String
     private var lastBackPressedTime = 0L
+    private val viewModel : AuthViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = HomeActivityBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        initProperty()
         initView()
+        setRecycler()
 
         logoutButton.setOnClickListener {
             logout()
@@ -34,11 +39,12 @@ class HomeActivity : AppCompatActivity() {
         // 새로운 채팅 생성 버튼
         // 클릭시 Activity 실행 후 현재 Activity 종료
         newChatButton.setOnClickListener {
-            startActivity(Intent(this, NewChatActivity::class.java))
+            startActivity(
+                Intent(this, NewChatActivity::class.java)
+                    .putExtra("uid", uid)
+            )
             finish()
         }
-
-        setRecycler()
 
         // 뒤로가기 버튼 클릭 콜백 연결
         onBackPressedDispatcher.addCallback(this,backPressedCallback)
@@ -50,6 +56,11 @@ class HomeActivity : AppCompatActivity() {
         backPressedCallback.isEnabled = false
     }
 
+    // Intent에서 uid를 가져옴
+    private fun initProperty() {
+        uid = intent.getStringExtra("uid").toString()
+    }
+
     private fun initView() {
         newChatButton = binding.buttonNewChat
         logoutButton = binding.buttonLogout
@@ -57,12 +68,14 @@ class HomeActivity : AppCompatActivity() {
     }
 
     // 리사이클러 뷰를 초기화하는 메소드
-    // decoration을 사용해 Item 구분선을 추가함
+    // 리사이클러 어댑터에 현재 사용자의 uid를 인자로 넘겨서 활용함
+    // decoration을 사용해 Item에 구분선을 추가함
     private fun setRecycler(){
         chattingRoomRecycler.layoutManager = LinearLayoutManager(this)
         val decoration = DividerItemDecoration(applicationContext, DividerItemDecoration.VERTICAL)
         chattingRoomRecycler.addItemDecoration(decoration)
-        chattingRoomRecycler.adapter = ChattingRoomRecyclerAdapter()
+
+        chattingRoomRecycler.adapter = ChattingRoomRecyclerAdapter(uid)
     }
 
     // 로그아웃 메소드
@@ -72,8 +85,8 @@ class HomeActivity : AppCompatActivity() {
             .setTitle("로그아웃")
             .setMessage("로그아웃 하시겠습니까?")
             .setPositiveButton("확인"){ dialog, _ ->
-                // auth의 signout 메서드 호출 후 로그인 화면으로 돌아감
-                FirebaseAuth.getInstance().signOut()
+                // View Model의 로그아웃 메소드 호출 후 로그인 화면으로 돌아감
+                viewModel.logout()
                 startActivity(Intent(this, LoginActivity::class.java))
                 dialog.dismiss()
                 finish()

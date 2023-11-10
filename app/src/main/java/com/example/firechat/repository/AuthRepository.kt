@@ -14,6 +14,8 @@ import com.google.firebase.database.FirebaseDatabase
 class AuthRepository {
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseDatabase.getInstance()
+
+    // 로그인 메소드
     fun tryLogin(id : String, pw : String, resultCallBack : LoginResultCallBack){
         auth.signInWithEmailAndPassword(id, pw)
             .addOnCompleteListener { task ->
@@ -41,7 +43,7 @@ class AuthRepository {
                 val uid = user?.uid.toString()
                 val userData = User(name, email, uid)
 
-                // 유저의 이름과 아이디를 DB에 저장
+                // 유저의 이름과 아이디(이메일)를 DB에 저장
                 // 경로는 DB -> User -> UID(고유 아이디)
                 db.getReference("User").child(uid).setValue(userData)
 
@@ -63,5 +65,10 @@ class AuthRepository {
                 registerResultCallback.returnRegisterResult(error)
             }
         }
+    }
+
+    // 로그아웃 메소드
+    fun logout(){
+        auth.signOut()
     }
 }

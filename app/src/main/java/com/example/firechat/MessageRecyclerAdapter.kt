@@ -8,7 +8,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.firechat.data.Message
 import com.example.firechat.databinding.MessageMyItemBinding
 import com.example.firechat.databinding.MessageOpponentItemBinding
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
@@ -18,10 +17,10 @@ import com.google.firebase.database.getValue
 class MessageRecyclerAdapter(
     private val context : Context,
     var chattingRoomKey : String,
+    private val uid : String
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     val message = ArrayList<Message>()
     val messageKeys = ArrayList<String>()
-    private val uid = FirebaseAuth.getInstance().uid
     private val db = FirebaseDatabase.getInstance()
     val recyclerView = (context as ChattingRoomActivity).messageRecyclerView
 

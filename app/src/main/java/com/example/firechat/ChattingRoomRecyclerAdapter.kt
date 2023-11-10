@@ -13,7 +13,6 @@ import com.example.firechat.data.ChattingRoom
 import com.example.firechat.data.Message
 import com.example.firechat.data.User
 import com.example.firechat.databinding.ChattingRoomRecyclerItemBinding
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
@@ -23,11 +22,10 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.TimeZone
 
-class ChattingRoomRecyclerAdapter : RecyclerView.Adapter<ChattingRoomRecyclerAdapter.ChattingRoomViewHolder>() {
+class ChattingRoomRecyclerAdapter(private val uid : String) : RecyclerView.Adapter<ChattingRoomRecyclerAdapter.ChattingRoomViewHolder>() {
     val chattingRooms = ArrayList<ChattingRoom>()
     val chattingRoomKeys = ArrayList<String>()
     private val db = FirebaseDatabase.getInstance()
-    private val uid = FirebaseAuth.getInstance().currentUser?.uid.toString()
 
     // 리사이클러 뷰 초기화시 수행되는 메소드
     init {
@@ -78,12 +76,13 @@ class ChattingRoomRecyclerAdapter : RecyclerView.Adapter<ChattingRoomRecyclerAda
 
             // 사용자가 채팅방을 클릭시 사용되는 리스너
             // 채팅방의 정보를 담은 Intent로 채팅방 Activity를 시작함
-            // 그후 현재 Home Activity는 종료
+            // 그후 현재 Home Activity는 종료함
             binding.chattingRoomBackground.setOnClickListener {
                 val intent = Intent(context, ChattingRoomActivity::class.java)
                 intent.putExtra("chatRoom", chattingRoomData)
                 intent.putExtra("opponent", opponentUser)
                 intent.putExtra("chatRoomKey", key)
+                intent.putExtra("uid", uid)
 
                 context.startActivity(intent)
                 (context as AppCompatActivity).finish()
