@@ -164,7 +164,7 @@ class ChattingRoomActivity : AppCompatActivity() {
     private fun getOpponentOnlineState() {
         db.getReference("ChattingRoom")
             .child(chatRoomKey).child("users")
-            .addValueEventListener( object : ValueEventListener{
+            .addValueEventListener( object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     for (data in snapshot.children) {
                         if(data.key == opponentUser.uid)

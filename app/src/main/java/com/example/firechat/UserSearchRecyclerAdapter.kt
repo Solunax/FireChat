@@ -2,6 +2,7 @@ package com.example.firechat
 
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
@@ -99,16 +100,23 @@ class UserSearchRecyclerAdapter(val context : Context, private val uid : String)
         db.getReference("ChattingRoom").orderByChild("users/${opponent.uid}/joinState").equalTo(true)
             .addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
-                    if(snapshot.value == null){
-                        db.getReference("ChattingRoom").push().setValue(chatRoom).addOnSuccessListener {
-                            moveToChattingRoom(chatRoom, opponent)
+                    var validationCheck = false
+
+                    for (data in snapshot.children) {
+                        val userData = data.child("users").value.toString()
+
+                        if (userData.contains(uid) && userData.contains(opponent.uid)) {
+                            validationCheck = true
                         }
-                    } else {
-                        context.startActivity(
-                            Intent(context, HomeActivity::class.java)
-                                .putExtra("uid", uid)
-                        )
+                    }
+
+                    if(validationCheck){
                         moveToChattingRoom(chatRoom, opponent)
+                    } else {
+                        db.getReference("ChattingRoom").push()
+                            .setValue(chatRoom).addOnSuccessListener {
+                                moveToChattingRoom(chatRoom, opponent)
+                            }
                     }
                 }
 

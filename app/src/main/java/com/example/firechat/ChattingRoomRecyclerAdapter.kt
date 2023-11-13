@@ -171,7 +171,7 @@ class ChattingRoomRecyclerAdapter(private val uid : String) : RecyclerView.Adapt
     private fun setChattingRooms() {
         db.getReference("ChattingRoom")
             .orderByChild("users/$uid/joinState").equalTo(true)
-            .addListenerForSingleValueEvent(object : ValueEventListener {
+            .addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     chattingRooms.clear()
 

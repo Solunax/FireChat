@@ -12,6 +12,7 @@
         android:id="@+id/message_content"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:maxEms="15"
         android:autoLink="web"
         android:background="@drawable/message_opponent_background"
         android:gravity="start|center_vertical"
