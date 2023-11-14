@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -8,24 +8,33 @@
     tools:context=".LoginActivity">
 
     <TextView
+        android:id="@+id/title"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:text="@string/title_name"
-
-        android:layout_weight="1"
-        android:textAlignment="center"
+        android:background="@color/deep_gray"
         android:gravity="center"
+        android:text="@string/title_name"
+        android:textAlignment="center"
         android:textColor="@color/white"
         android:textSize="60sp"
         android:textStyle="bold"
-        android:background="@color/deep_gray" />
+        app:layout_constraintVertical_weight="1"
 
-    <LinearLayout
+        app:layout_constraintBottom_toTopOf="@+id/constraintLayout"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/constraintLayout"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="2"
-        android:orientation="vertical"
-        android:gravity="center">
+        app:layout_constraintVertical_weight="2"
+
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/title">
 
         <EditText
             android:id="@+id/name"
@@ -34,8 +43,12 @@
             android:ems="10"
             android:inputType="text"
             android:textSize="20sp"
-            android:layout_marginBottom="20dp"
-            android:hint="이름" />
+            android:layout_marginBottom="10dp"
+            android:hint="이름"
+
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toTopOf="@id/email"/>
 
         <EditText
             android:id="@+id/email"
@@ -44,8 +57,13 @@
             android:ems="10"
             android:inputType="textEmailAddress"
             android:textSize="20sp"
-            android:layout_marginBottom="20dp"
-            android:hint="이메일(로그인 아이디)" />
+            android:hint="이메일(로그인 아이디)"
+
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintVertical_bias="0.45"/>
 
         <EditText
             android:id="@+id/pw"
@@ -54,8 +72,12 @@
             android:ems="10"
             android:inputType="textPassword"
             android:textSize="20sp"
-            android:layout_marginBottom="20dp"
-            android:hint="비밀번호(6자리 이상)" />
+            android:layout_marginTop="10dp"
+            android:hint="비밀번호(6자리 이상)"
+
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/email"/>
 
         <Button
             android:id="@+id/button_register"
@@ -64,9 +86,13 @@
             android:ems="10"
             android:textSize="20sp"
             android:backgroundTint="@color/deep_gray"
-            android:text="회원가입" />
+            android:layout_marginTop="10dp"
+            android:text="회원가입"
 
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/pw"/>
 
-    </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

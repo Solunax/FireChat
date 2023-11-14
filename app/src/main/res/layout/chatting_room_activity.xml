@@ -61,7 +61,8 @@
         android:background="@color/deep_gray"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/message_input"/>
+        app:layout_constraintTop_toBottomOf="@+id/message_recycler"
+        app:layout_constraintBottom_toTopOf="@+id/message_input"/>
 
     <EditText
         android:id="@+id/message_input"
