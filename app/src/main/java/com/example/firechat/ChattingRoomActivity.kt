@@ -138,7 +138,9 @@ class ChattingRoomActivity : AppCompatActivity() {
     // 메세지 보내기 메소드
     // 사용자가 입력한 채팅을 Message 클래스 형식에 맞게 생성하여 서버에 저장함
     // Message의 형식은 UID, 현재 시간 정보, 메세지 내용, 읽은 상태로 구성됨
-    // 읽은 상태는 기본값이 false로 지정되어 있기 때문에 별도로 수정하지 않음
+    // 읽은 상태는 현재 상대방이 채팅방 접속 상태에 따라 결정함
+    // 예를들어, 상대가 이미 채팅방에 접속한 상태라면 안읽었다는 표시를 할 필요가 없음 따라서 Message 클래스에 onlineState를 true로
+    // 아닐경우는 false로 보냄
     @RequiresApi(Build.VERSION_CODES.O)
     private fun sendMessage() {
         if(messageInput.text.isNotEmpty()){
@@ -160,7 +162,7 @@ class ChattingRoomActivity : AppCompatActivity() {
         changeOnlineState(true)
     }
 
-    // 상대방이 현재 채팅방을 보고있는(채팅방을 킨 상태인지) 상태 값을 메소드
+    // 상대방이 현재 채팅방에 접속해있는지(채팅방 activity를 보는 상태인지) 상태 값을 메소드
     private fun getOpponentOnlineState() {
         db.getReference("ChattingRoom")
             .child(chatRoomKey).child("users")
@@ -194,6 +196,7 @@ class ChattingRoomActivity : AppCompatActivity() {
     }
 
     // 현재 채팅방을 나갈시 현재 채팅방의 온라인 상태를 바꾸는 메소드
+    // 이 메소드는 메세지 전송시 읽은 상태 값을 설정하기 위해 DB 값을 수정함
     private fun changeOnlineState(state : Boolean) {
         db.getReference("ChattingRoom")
             .child(chatRoomKey).child("users")
