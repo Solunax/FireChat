@@ -11,7 +11,7 @@
         android:layout_height="0dp"
         android:background="@color/deep_gray"
         android:orientation="horizontal"
-        app:layout_constraintVertical_weight="0.97"
+        app:layout_constraintVertical_weight="0.98"
 
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

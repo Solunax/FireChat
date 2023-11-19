@@ -160,6 +160,15 @@ class ChattingRoomActivity : AppCompatActivity() {
         messageRecyclerView.adapter = MessageRecyclerAdapter(this, chatRoomKey, uid)
         getOpponentOnlineState()
         changeOnlineState(true)
+
+        // 소프트 키보드 사용시 리사이클러 뷰의 마지막 항목을 표시하는 기능을 수행
+        messageRecyclerView.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+            messageRecyclerView.post {
+                messageRecyclerView.adapter?.itemCount?.takeIf { it > 0 }?.let {
+                    messageRecyclerView.scrollToPosition(it - 1)
+                }
+            }
+        }
     }
 
     // 상대방이 현재 채팅방에 접속해있는지(채팅방 activity를 보는 상태인지) 상태 값을 메소드
