@@ -1,14 +1,18 @@
 package com.example.firechat
 
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.view.MotionEvent
+import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.firechat.data.ChattingRoom
@@ -27,6 +31,7 @@ import java.util.TimeZone
 
 class ChattingRoomActivity : AppCompatActivity() {
     private lateinit var binding : ChattingRoomActivityBinding
+    private lateinit var topLayout : ConstraintLayout
     private lateinit var goBackButton : ImageButton
     private lateinit var sendMessageButton : ImageButton
     private lateinit var messageInput : EditText
@@ -36,6 +41,7 @@ class ChattingRoomActivity : AppCompatActivity() {
     private lateinit var chatRoom : ChattingRoom
     private lateinit var opponentUser : User
     private lateinit var chatRoomKey : String
+    private lateinit var inputMethodManager : InputMethodManager
     private var opponentUserOnlineState = false
     lateinit var messageRecyclerView : RecyclerView
     private val db = FirebaseDatabase.getInstance()
@@ -64,6 +70,14 @@ class ChattingRoomActivity : AppCompatActivity() {
         onBackPressedDispatcher.addCallback(this, backPressedCallback)
     }
 
+    // 소프트 키보드가 활성화된 상태에서 다른곳 터치시 소프트 키보드를 비활성화함
+    override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
+        if (currentFocus != null) {
+            inputMethodManager.hideSoftInputFromWindow(this.currentFocus?.windowToken, 0)
+        }
+        return super.dispatchTouchEvent(ev)
+    }
+
     // 메모리 누수 방지를 위해 Destroy시 콜백을 비활성화
     override fun onDestroy() {
         super.onDestroy()
@@ -73,6 +87,8 @@ class ChattingRoomActivity : AppCompatActivity() {
     // 이전 Activity에서 넘겨준 값들을 현재 Activity에 기입
     // 기입된 데이터를 바탕으로 채팅방을 구성함
     // 정보는 채팅방 정보(사용자), 채팅방 고유 Key(ID), 상대방 UID를 포함함
+    // 소프트키보드가 열린 상태로 다른곳을 터치하면 소프트 키보드를 닫는 기능을 위해
+    // InputMethodManager 사용
     private fun initProperty() {
         uid = intent.getStringExtra("uid").toString()
         chatRoom = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -86,6 +102,8 @@ class ChattingRoomActivity : AppCompatActivity() {
         } else {
             intent.getSerializableExtra("opponent") as User
         }
+
+        inputMethodManager = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
     }
 
     // 상대방의 이름을 Activity 상단에 고정
@@ -96,6 +114,7 @@ class ChattingRoomActivity : AppCompatActivity() {
         messageRecyclerView = binding.messageRecycler
         sendMessageButton = binding.sendMessage
         opponentName = binding.chattingRoomOpponentUserName
+        topLayout = binding.constraintTop
 
         opponentName.text = opponentUser.name
     }
@@ -165,7 +184,7 @@ class ChattingRoomActivity : AppCompatActivity() {
         messageRecyclerView.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
             messageRecyclerView.post {
                 messageRecyclerView.adapter?.itemCount?.takeIf { it > 0 }?.let {
-                    messageRecyclerView.scrollToPosition(it - 1)
+                    messageRecyclerView.smoothScrollToPosition(it - 1)
                 }
             }
         }
