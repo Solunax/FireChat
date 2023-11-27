@@ -14,7 +14,7 @@
         android:layout_height="wrap_content"
         android:maxEms="14"
         android:autoLink="web"
-        android:background="@drawable/message_opponent_background"
+        android:background="@drawable/chattingroom_message_opponent_background"
         android:gravity="start|center_vertical"
         android:linksClickable="true"
         android:padding="10dp"

@@ -59,7 +59,7 @@
                 android:layout_height="wrap_content"
                 android:textAlignment="center"
                 android:textSize="20sp"
-                android:background="@drawable/unread_count_background"
+                android:background="@drawable/chattingroom_unread_count_background"
                 android:textColor="@color/white"
                 android:textStyle="bold"
                 android:ems="3"

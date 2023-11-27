@@ -1,6 +1,6 @@
 package com.example.firechat.viewModel
 
-open class Event<out T>(private val content : T) {
+open class Event<out T>(private val content: T) {
     private var hasBeenHandle = false
         private set
 

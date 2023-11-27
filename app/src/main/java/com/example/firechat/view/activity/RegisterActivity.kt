@@ -1,4 +1,4 @@
-package com.example.firechat
+package com.example.firechat.view.activity
 
 import android.os.Bundle
 import android.util.Log
@@ -11,12 +11,12 @@ import com.example.firechat.databinding.RegisterActivityBinding
 import com.example.firechat.viewModel.AuthViewModel
 
 class RegisterActivity : AppCompatActivity() {
-    private lateinit var binding : RegisterActivityBinding
-    private lateinit var inputName : EditText
-    private lateinit var inputEmail : EditText
-    private lateinit var inputPw : EditText
-    private lateinit var registerButton : Button
-    private val viewModel : AuthViewModel by viewModels()
+    private lateinit var binding: RegisterActivityBinding
+    private lateinit var inputName: EditText
+    private lateinit var inputEmail: EditText
+    private lateinit var inputPw: EditText
+    private lateinit var registerButton: Button
+    private val viewModel: AuthViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,10 +42,30 @@ class RegisterActivity : AppCompatActivity() {
                         Toast.makeText(this, "회원가입에 성공했습니다.", Toast.LENGTH_SHORT).show()
                         finish()
                     }
-                    "register weak password" -> Toast.makeText(this, "비밀번호 강도가 너무 약합니다.", Toast.LENGTH_SHORT).show()
-                    "register email already use" -> Toast.makeText(this, "이미 사용중인 이메일 주소입니다.", Toast.LENGTH_SHORT).show()
-                    "register invalid email" -> Toast.makeText(this, "이메일 주소 형식에 맞지 않습니다.", Toast.LENGTH_SHORT).show()
-                    "register network error" -> Toast.makeText(this, "비밀번호 강도가 너무 약합니다.", Toast.LENGTH_SHORT).show()
+
+                    "register weak password" -> Toast.makeText(
+                        this,
+                        "비밀번호 강도가 너무 약합니다.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+
+                    "register email already use" -> Toast.makeText(
+                        this,
+                        "이미 사용중인 이메일 주소입니다.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+
+                    "register invalid email" -> Toast.makeText(
+                        this,
+                        "이메일 주소 형식에 맞지 않습니다.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+
+                    "register network error" -> Toast.makeText(
+                        this,
+                        "비밀번호 강도가 너무 약합니다.",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
         }
@@ -71,7 +91,7 @@ class RegisterActivity : AppCompatActivity() {
 
     // 회원 가입시 정보를 제대로 입력했는지 확인하기 위한 유효성 검사용 메소드
     // 조건을 충족하지 못할시 Toast Message를 사용자에게 표시함
-    private fun infoValidationCheck(name : String, email : String, pw : String) : Boolean {
+    private fun infoValidationCheck(name: String, email: String, pw: String): Boolean {
         if (name.isBlank()) {
             inputName.requestFocus()
             Toast.makeText(this, "이름이 입력되지 않았습니다.", Toast.LENGTH_SHORT).show()
@@ -84,13 +104,13 @@ class RegisterActivity : AppCompatActivity() {
             return false
         }
 
-        if(pw.isBlank()){
+        if (pw.isBlank()) {
             inputPw.requestFocus()
             Toast.makeText(this, "비밀번호가 입력되지 않았습니다.", Toast.LENGTH_SHORT).show()
             return false
         }
 
-        if(pw.length < 6){
+        if (pw.length < 6) {
             inputPw.requestFocus()
             Toast.makeText(this, "비밀번호는 6글자 이상으로 설정하세요.", Toast.LENGTH_SHORT).show()
             return false

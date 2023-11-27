@@ -1,23 +1,25 @@
-package com.example.firechat
+package com.example.firechat.view.adapter
 
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.example.firechat.data.Message
+import com.example.firechat.R
+import com.example.firechat.model.data.Message
 import com.example.firechat.databinding.MessageMyItemBinding
 import com.example.firechat.databinding.MessageOpponentItemBinding
+import com.example.firechat.view.activity.ChattingRoomActivity
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.getValue
 
-class MessageRecyclerAdapter(
-    private val context : Context,
-    var chattingRoomKey : String,
-    private val uid : String
+class ChattingRoomRecyclerAdapter(
+    private val context: Context,
+    var chattingRoomKey: String,
+    private val uid: String
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     val message = ArrayList<Message>()
     val messageKeys = ArrayList<String>()
@@ -42,7 +44,7 @@ class MessageRecyclerAdapter(
             .addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     message.clear()
-                    for(data in snapshot.children) {
+                    for (data in snapshot.children) {
                         message.add(data.getValue<Message>()!!)
                         messageKeys.add(data.key!!)
                     }
@@ -58,7 +60,7 @@ class MessageRecyclerAdapter(
 
     // 메세지를 누가 보냈느냐에 따라서 내용을 분리하는 메소드
     override fun getItemViewType(position: Int): Int {
-        return if(message[position].senderUid == uid){
+        return if (message[position].senderUid == uid) {
             1
         } else {
             0
@@ -75,6 +77,7 @@ class MessageRecyclerAdapter(
 
                 MyMessageViewHolder(MessageMyItemBinding.bind(view))
             }
+
             else -> {
                 val view = LayoutInflater.from(context)
                     .inflate(R.layout.message_opponent_item, parent, false)
@@ -86,7 +89,7 @@ class MessageRecyclerAdapter(
 
     // 메세지를 전송한 사람이 누구인지에 따라서 My, Opponent 분리
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        if(message[position].senderUid == uid){
+        if (message[position].senderUid == uid) {
             (holder as MyMessageViewHolder).bind(position)
         } else {
             (holder as OpponentMessageViewHolder).bind(position)
@@ -97,7 +100,7 @@ class MessageRecyclerAdapter(
         return message.size
     }
 
-    inner class MyMessageViewHolder(binding : MessageMyItemBinding) :
+    inner class MyMessageViewHolder(binding: MessageMyItemBinding) :
         RecyclerView.ViewHolder(binding.root) {
         private val messageContent = binding.messageContent
         private val date = binding.messageDate
@@ -111,7 +114,7 @@ class MessageRecyclerAdapter(
             date.text = getDateText(sendDate)
             messageContent.text = message.content
 
-            if(message.confirmed){
+            if (message.confirmed) {
                 readCheck.visibility = View.GONE
             } else {
                 readCheck.visibility = View.VISIBLE
@@ -120,7 +123,12 @@ class MessageRecyclerAdapter(
 
         // 메세지가 전송된 시간을 YYYY-MM-DD HH:MM 형식 문자열로 만들어주는 메소드
         private fun getDateText(sendDate: String): String {
-            var dateText = "${sendDate.substring(0, 4)}-${sendDate.substring(4, 6)}-${sendDate.substring(6, 8)}\n"
+            var dateText = "${sendDate.substring(0, 4)}-${sendDate.substring(4, 6)}-${
+                sendDate.substring(
+                    6,
+                    8
+                )
+            }\n"
             val timeString: String
             if (sendDate.isNotBlank()) {
                 timeString = sendDate.substring(8, 12)
@@ -140,7 +148,7 @@ class MessageRecyclerAdapter(
         }
     }
 
-    inner class OpponentMessageViewHolder(binding : MessageOpponentItemBinding) :
+    inner class OpponentMessageViewHolder(binding: MessageOpponentItemBinding) :
         RecyclerView.ViewHolder(binding.root) {
         private val messageContent = binding.messageContent
         private val date = binding.messageDate
@@ -154,7 +162,7 @@ class MessageRecyclerAdapter(
             date.text = getDateText(sendDate)
             messageContent.text = message.content
 
-            if(message.confirmed){
+            if (message.confirmed) {
                 readCheck.visibility = View.GONE
             } else {
                 readCheck.visibility = View.VISIBLE
@@ -173,7 +181,12 @@ class MessageRecyclerAdapter(
 
         // 메세지가 전송된 시간을 YYYY-MM-DD HH:MM 형식 문자열로 만들어주는 메소드
         private fun getDateText(sendDate: String): String {
-            var dateText = "${sendDate.substring(0, 4)}-${sendDate.substring(4, 6)}-${sendDate.substring(6, 8)}\n"
+            var dateText = "${sendDate.substring(0, 4)}-${sendDate.substring(4, 6)}-${
+                sendDate.substring(
+                    6,
+                    8
+                )
+            }\n"
             val timeString: String
             if (sendDate.isNotBlank()) {
                 timeString = sendDate.substring(8, 12)

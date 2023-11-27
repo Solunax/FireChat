@@ -1,4 +1,4 @@
-package com.example.firechat
+package com.example.firechat.view.activity
 
 import android.content.Intent
 import android.content.SharedPreferences
@@ -13,13 +13,13 @@ import com.example.firechat.databinding.LoginActivityBinding
 import com.example.firechat.viewModel.AuthViewModel
 
 class LoginActivity : AppCompatActivity() {
-    private lateinit var binding : LoginActivityBinding
-    private lateinit var inputEmail : EditText
-    private lateinit var inputPw : EditText
-    private lateinit var loginButton : Button
-    private lateinit var register : TextView
-    private lateinit var sharePreference : SharedPreferences
-    private val viewModel : AuthViewModel by viewModels()
+    private lateinit var binding: LoginActivityBinding
+    private lateinit var inputEmail: EditText
+    private lateinit var inputPw: EditText
+    private lateinit var loginButton: Button
+    private lateinit var register: TextView
+    private lateinit var sharePreference: SharedPreferences
+    private val viewModel: AuthViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,8 +50,17 @@ class LoginActivity : AppCompatActivity() {
             event.getContentIfNotHandled()?.let { code ->
                 when (code) {
                     "login success" -> updateUI()
-                    "login id/pw mismatch" -> Toast.makeText(this, "아이디 혹은 비밀번호가 일치하지 않습니다.", Toast.LENGTH_SHORT).show()
-                    "login network error" -> Toast.makeText(this, "네트워크 상태를 확인해 주세요", Toast.LENGTH_SHORT).show()
+                    "login id/pw mismatch" -> Toast.makeText(
+                        this,
+                        "아이디 혹은 비밀번호가 일치하지 않습니다.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+
+                    "login network error" -> Toast.makeText(
+                        this,
+                        "네트워크 상태를 확인해 주세요",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
         }
@@ -73,7 +82,7 @@ class LoginActivity : AppCompatActivity() {
         val email = inputEmail.text.toString().trim()
         val pw = inputPw.text.toString().trim()
 
-        if(infoValidationCheck(email, pw))
+        if (infoValidationCheck(email, pw))
             viewModel.tryLogin(email, pw)
     }
 
@@ -88,21 +97,21 @@ class LoginActivity : AppCompatActivity() {
         // UID를 인텐트에 추가하여 넘겨줌
         startActivity(
             Intent(this, HomeActivity::class.java)
-            .putExtra("uid", viewModel.currentUserUID)
+                .putExtra("uid", viewModel.currentUserUID)
         )
         finish()
     }
 
     // 로그인 정보를 제대로 입력했는지 확인하기 위한 유효성 검사용 함수
     // 조건을 충족하지 못할시 Toast Message를 사용자에게 표시함
-    private fun infoValidationCheck(email : String, pw : String) : Boolean {
+    private fun infoValidationCheck(email: String, pw: String): Boolean {
         if (email.isBlank()) {
             inputEmail.requestFocus()
             Toast.makeText(this, "아이디가 입력되지 않았습니다.", Toast.LENGTH_SHORT).show()
             return false
         }
 
-        if(pw.isBlank()){
+        if (pw.isBlank()) {
             inputPw.requestFocus()
             Toast.makeText(this, "비밀번호가 입력되지 않았습니다.", Toast.LENGTH_SHORT).show()
             return false

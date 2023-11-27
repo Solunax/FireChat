@@ -21,7 +21,7 @@
             app:layout_constraintBottom_toBottomOf="@+id/chatting_room_opponent_user_name"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="@+id/chatting_room_opponent_user_name"
-            app:srcCompat="@drawable/baseline_arrow_back_24" />
+            app:srcCompat="@drawable/chattingroom_icon_back_button" />
 
         <TextView
             android:id="@+id/chatting_room_opponent_user_name"
@@ -86,7 +86,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="@+id/message_input"
             app:layout_constraintBottom_toBottomOf="@id/message_input"
-            app:srcCompat="@drawable/baseline_send_24" />
+            app:srcCompat="@drawable/chattingroom_icon_send_button" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

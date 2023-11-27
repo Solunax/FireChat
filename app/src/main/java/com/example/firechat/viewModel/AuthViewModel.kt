@@ -3,7 +3,7 @@ package com.example.firechat.viewModel
 import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.example.firechat.repository.AuthRepository
+import com.example.firechat.model.repository.AuthRepository
 
 class AuthViewModel : ViewModel(), LoginResultCallBack, RegisterResultCallback {
     private val repository = AuthRepository()

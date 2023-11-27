@@ -1,4 +1,4 @@
-package com.example.firechat
+package com.example.firechat.view.activity
 
 import android.content.Context
 import android.content.Intent
@@ -15,11 +15,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.firechat.data.ChattingRoom
-import com.example.firechat.data.ChattingState
-import com.example.firechat.data.Message
-import com.example.firechat.data.User
+import com.example.firechat.model.data.ChattingRoom
+import com.example.firechat.model.data.ChattingState
+import com.example.firechat.model.data.Message
+import com.example.firechat.model.data.User
 import com.example.firechat.databinding.ChattingRoomActivityBinding
+import com.example.firechat.view.adapter.ChattingRoomRecyclerAdapter
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
@@ -30,20 +31,20 @@ import java.time.format.DateTimeFormatter
 import java.util.TimeZone
 
 class ChattingRoomActivity : AppCompatActivity() {
-    private lateinit var binding : ChattingRoomActivityBinding
-    private lateinit var topLayout : ConstraintLayout
-    private lateinit var goBackButton : ImageButton
-    private lateinit var sendMessageButton : ImageButton
-    private lateinit var messageInput : EditText
-    private lateinit var opponentName : TextView
+    private lateinit var binding: ChattingRoomActivityBinding
+    private lateinit var topLayout: ConstraintLayout
+    private lateinit var goBackButton: ImageButton
+    private lateinit var sendMessageButton: ImageButton
+    private lateinit var messageInput: EditText
+    private lateinit var opponentName: TextView
 
-    private lateinit var uid : String
-    private lateinit var chatRoom : ChattingRoom
-    private lateinit var opponentUser : User
-    private lateinit var chatRoomKey : String
-    private lateinit var inputMethodManager : InputMethodManager
+    private lateinit var uid: String
+    private lateinit var chatRoom: ChattingRoom
+    private lateinit var opponentUser: User
+    private lateinit var chatRoomKey: String
+    private lateinit var inputMethodManager: InputMethodManager
     private var opponentUserOnlineState = false
-    lateinit var messageRecyclerView : RecyclerView
+    lateinit var messageRecyclerView: RecyclerView
     private val db = FirebaseDatabase.getInstance()
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -79,9 +80,11 @@ class ChattingRoomActivity : AppCompatActivity() {
     }
 
     // 메모리 누수 방지를 위해 Destroy시 콜백을 비활성화
+    // 채팅방에서 완전히 나갈시(Destroy) 채팅방 접속 상태 변경
     override fun onDestroy() {
         super.onDestroy()
         backPressedCallback.isEnabled = false
+        changeOnlineState(false)
     }
 
     // 이전 Activity에서 넘겨준 값들을 현재 Activity에 기입
@@ -124,7 +127,7 @@ class ChattingRoomActivity : AppCompatActivity() {
     // 서버에 저장된 Key값을 가져옴
     // 그게 아니라면 Key값을 바탕으로 리사이클러뷰(채팅 내역)을 구성함
     private fun setChattingRoom() {
-        if(chatRoomKey.isBlank()){
+        if (chatRoomKey.isBlank()) {
             setChatRoomKey()
         } else {
             setRecycler()
@@ -141,7 +144,7 @@ class ChattingRoomActivity : AppCompatActivity() {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     for (data in snapshot.children) {
                         val userData = data.child("users").value.toString()
-                        if(userData.contains(uid) && userData.contains(opponentUser.uid.toString())){
+                        if (userData.contains(uid) && userData.contains(opponentUser.uid.toString())) {
                             chatRoomKey = data.key!!
                             setRecycler()
                             break
@@ -162,8 +165,9 @@ class ChattingRoomActivity : AppCompatActivity() {
     // 아닐경우는 false로 보냄
     @RequiresApi(Build.VERSION_CODES.O)
     private fun sendMessage() {
-        if(messageInput.text.isNotEmpty()){
-            val message = Message(uid, getTimeData(), messageInput.text.toString(), opponentUserOnlineState)
+        if (messageInput.text.isNotEmpty()) {
+            val message =
+                Message(uid, getTimeData(), messageInput.text.toString(), opponentUserOnlineState)
 
             db.getReference("ChattingRoom")
                 .child(chatRoomKey).child("messages")
@@ -176,7 +180,7 @@ class ChattingRoomActivity : AppCompatActivity() {
 
     private fun setRecycler() {
         messageRecyclerView.layoutManager = LinearLayoutManager(this)
-        messageRecyclerView.adapter = MessageRecyclerAdapter(this, chatRoomKey, uid)
+        messageRecyclerView.adapter = ChattingRoomRecyclerAdapter(this, chatRoomKey, uid)
         getOpponentOnlineState()
         changeOnlineState(true)
 
@@ -194,10 +198,10 @@ class ChattingRoomActivity : AppCompatActivity() {
     private fun getOpponentOnlineState() {
         db.getReference("ChattingRoom")
             .child(chatRoomKey).child("users")
-            .addValueEventListener( object : ValueEventListener {
+            .addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     for (data in snapshot.children) {
-                        if(data.key == opponentUser.uid)
+                        if (data.key == opponentUser.uid)
                             opponentUserOnlineState = data.getValue<ChattingState>()!!.onlineState
                     }
                 }
@@ -209,7 +213,7 @@ class ChattingRoomActivity : AppCompatActivity() {
 
     // Message 클래스 구성시 필요한 현재 시간 정보를 변환하는 메소드
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun getTimeData() : String {
+    private fun getTimeData(): String {
         val localDateTime = LocalDateTime.now()
         localDateTime.atZone(TimeZone.getDefault().toZoneId())
         val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
@@ -225,11 +229,11 @@ class ChattingRoomActivity : AppCompatActivity() {
 
     // 현재 채팅방을 나갈시 현재 채팅방의 온라인 상태를 바꾸는 메소드
     // 이 메소드는 메세지 전송시 읽은 상태 값을 설정하기 위해 DB 값을 수정함
-    private fun changeOnlineState(state : Boolean) {
+    private fun changeOnlineState(state: Boolean) {
         db.getReference("ChattingRoom")
             .child(chatRoomKey).child("users")
             .child(uid).setValue(ChattingState(true, state)).addOnSuccessListener {
-                if(!state)
+                if (!state)
                     backToHomeActivity()
             }
     }

@@ -1,4 +1,4 @@
-package com.example.firechat
+package com.example.firechat.view.activity
 
 import android.content.Intent
 import android.os.Bundle
@@ -12,13 +12,14 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.firechat.databinding.NewChatActivityBinding
+import com.example.firechat.view.adapter.UserSearchRecyclerAdapter
 
 class NewChatActivity : AppCompatActivity() {
-    private lateinit var binding : NewChatActivityBinding
-    private lateinit var backButton : ImageButton
-    private lateinit var search : EditText
-    private lateinit var userRecycler : RecyclerView
-    private lateinit var uid : String
+    private lateinit var binding: NewChatActivityBinding
+    private lateinit var backButton: ImageButton
+    private lateinit var search: EditText
+    private lateinit var userRecycler: RecyclerView
+    private lateinit var uid: String
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -80,7 +81,7 @@ class NewChatActivity : AppCompatActivity() {
         userRecycler.layoutManager = LinearLayoutManager(this)
         val decoration = DividerItemDecoration(applicationContext, DividerItemDecoration.VERTICAL)
         userRecycler.addItemDecoration(decoration)
-        userRecycler.adapter = UserSearchRecyclerAdapter(this, uid)
+        userRecycler.adapter = UserSearchRecyclerAdapter(uid)
     }
 
     // 뒤로가기 버튼 클릭시 홈 화면으로 돌아감
