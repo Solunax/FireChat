@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.firechat.databinding.NewChatActivityBinding
+import com.example.firechat.model.data.CurrentUserData
 import com.example.firechat.view.adapter.UserSearchRecyclerAdapter
 
 class NewChatActivity : AppCompatActivity() {
@@ -59,15 +60,12 @@ class NewChatActivity : AppCompatActivity() {
     }
 
     private fun backToHomeActivity() {
-        startActivity(
-            Intent(this, HomeActivity::class.java)
-                .putExtra("uid", uid)
-        )
+        startActivity(Intent(this, HomeActivity::class.java))
         finish()
     }
 
     private fun initProperty() {
-        uid = intent.getStringExtra("uid").toString()
+        uid = CurrentUserData.uid!!
     }
 
     private fun initView() {

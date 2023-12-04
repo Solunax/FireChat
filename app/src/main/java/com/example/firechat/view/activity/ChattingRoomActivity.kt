@@ -2,6 +2,7 @@ package com.example.firechat.view.activity
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
 import android.view.MotionEvent
@@ -15,11 +16,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.firechat.databinding.ChattingRoomActivityBinding
 import com.example.firechat.model.data.ChattingRoom
 import com.example.firechat.model.data.ChattingState
+import com.example.firechat.model.data.CurrentUserData
 import com.example.firechat.model.data.Message
 import com.example.firechat.model.data.User
-import com.example.firechat.databinding.ChattingRoomActivityBinding
 import com.example.firechat.view.adapter.ChattingRoomRecyclerAdapter
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -46,6 +48,8 @@ class ChattingRoomActivity : AppCompatActivity() {
     private var opponentUserOnlineState = false
     lateinit var messageRecyclerView: RecyclerView
     private val db = FirebaseDatabase.getInstance()
+    private var finishCheck = false
+    private lateinit var messageRect : Rect
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,7 +64,9 @@ class ChattingRoomActivity : AppCompatActivity() {
         // 뒤로가기 버튼을 누를시 홈 화면 Activity를 실행
         // 실행 후 현재 Activity 종료
         goBackButton.setOnClickListener {
+            finishCheck = true
             changeOnlineState(false)
+            backToHomeActivity()
         }
 
         // 메세지 전송 버튼을 누를시 현재 입력한 메세지를 서버에 저장
@@ -73,27 +79,47 @@ class ChattingRoomActivity : AppCompatActivity() {
 
     // 소프트 키보드가 활성화된 상태에서 다른곳 터치시 소프트 키보드를 비활성화함
     override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
-        if (currentFocus != null) {
-            inputMethodManager.hideSoftInputFromWindow(this.currentFocus?.windowToken, 0)
+        if (ev?.action == MotionEvent.ACTION_DOWN) {
+            if (currentFocus == messageInput) {
+                // 소프트 키보드 활성화 상태에서 메세지 레이아웃의 좌표를 저장
+                if (!::messageRect.isInitialized) {
+                    messageRect = Rect()
+                    binding.constraintBottom.getGlobalVisibleRect(messageRect)
+                }
+
+                // EditText와 ImageButton이 있는 레이아웃의 좌표를 바탕으로
+                // 이벤트가 발생한 지점이 해당 레이아웃 밖이면 소프트 키보드를 비활성화
+                if (!messageRect.contains(ev.x.toInt(), ev.y.toInt())) {
+                    inputMethodManager.hideSoftInputFromWindow(this.currentFocus?.windowToken, 0)
+                    messageInput.clearFocus()
+                }
+            }
         }
+
         return super.dispatchTouchEvent(ev)
     }
 
     // 메모리 누수 방지를 위해 Destroy시 콜백을 비활성화
     // 채팅방에서 완전히 나갈시(Destroy) 채팅방 접속 상태 변경
+    // 뒤로가기 버튼으로 인해 뒤로가기시
+    // 접속 상태 변경 메소드가 중복실행되지 않게 flag 값 확인
     override fun onDestroy() {
         super.onDestroy()
         backPressedCallback.isEnabled = false
-        changeOnlineState(false)
+
+        if (!finishCheck) {
+            changeOnlineState(false)
+        }
     }
 
     // 이전 Activity에서 넘겨준 값들을 현재 Activity에 기입
+    // uid는 Singleton 객체에서 가져옴
     // 기입된 데이터를 바탕으로 채팅방을 구성함
-    // 정보는 채팅방 정보(사용자), 채팅방 고유 Key(ID), 상대방 UID를 포함함
+    // 정보는 채팅방 정보(사용자), 채팅방 고유 Key(ID) 를 포함함
     // 소프트키보드가 열린 상태로 다른곳을 터치하면 소프트 키보드를 닫는 기능을 위해
     // InputMethodManager 사용
     private fun initProperty() {
-        uid = intent.getStringExtra("uid").toString()
+        uid = CurrentUserData.uid!!
         chatRoom = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             intent.getSerializableExtra("chatRoom", ChattingRoom::class.java)!!
         } else {
@@ -220,30 +246,26 @@ class ChattingRoomActivity : AppCompatActivity() {
         return localDateTime.format(dateTimeFormatter).toString()
     }
 
-    // 뒤로가기 버튼 클릭시 홈 화면으로 돌아감
+    // 뒤로가기 버튼 클릭시 온라인상태 변경 메소드 호출
     private val backPressedCallback = object : OnBackPressedCallback(true) {
         override fun handleOnBackPressed() {
             changeOnlineState(false)
+            backToHomeActivity()
         }
     }
 
     // 현재 채팅방을 나갈시 현재 채팅방의 온라인 상태를 바꾸는 메소드
     // 이 메소드는 메세지 전송시 읽은 상태 값을 설정하기 위해 DB 값을 수정함
+    // 만약 false로 수정시 채팅방을 나간다는 뜻이므로 backToHomeActivity 메소드 호출
     private fun changeOnlineState(state: Boolean) {
         db.getReference("ChattingRoom")
             .child(chatRoomKey).child("users")
-            .child(uid).setValue(ChattingState(true, state)).addOnSuccessListener {
-                if (!state)
-                    backToHomeActivity()
-            }
+            .child(uid).setValue(ChattingState(true, state))
     }
 
     // Home Activity로 돌아가는 메소드
     private fun backToHomeActivity() {
-        startActivity(
-            Intent(this, HomeActivity::class.java)
-                .putExtra("uid", uid)
-        )
+        startActivity(Intent(this, HomeActivity::class.java))
         finish()
     }
 }

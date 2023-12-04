@@ -10,6 +10,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
 import com.example.firechat.databinding.LoginActivityBinding
+import com.example.firechat.model.data.CurrentUserData
 import com.example.firechat.viewModel.AuthViewModel
 
 class LoginActivity : AppCompatActivity() {
@@ -94,11 +95,11 @@ class LoginActivity : AppCompatActivity() {
         editPreference.putString("pw", inputPw.text.toString().trim())
         editPreference.apply()
 
-        // UID를 인텐트에 추가하여 넘겨줌
-        startActivity(
-            Intent(this, HomeActivity::class.java)
-                .putExtra("uid", viewModel.currentUserUID)
-        )
+        // Singleton 객체에 uid값 설정
+        CurrentUserData.uid = viewModel.currentUserUID
+
+        // HomeActivity로 화면 전환
+        startActivity(Intent(this, HomeActivity::class.java))
         finish()
     }
 

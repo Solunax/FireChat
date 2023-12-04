@@ -116,7 +116,6 @@ class ChattingListRecyclerAdapter(private val uid: String) :
             intent.putExtra("chatRoom", chattingRooms[position])
             intent.putExtra("opponent", opponentUser)
             intent.putExtra("chatRoomKey", chattingRoomKeys[position])
-            intent.putExtra("uid", uid)
 
             context.startActivity(intent)
             (context as AppCompatActivity).finish()

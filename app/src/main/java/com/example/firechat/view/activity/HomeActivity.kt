@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.firechat.databinding.HomeActivityBinding
+import com.example.firechat.model.data.CurrentUserData
 import com.example.firechat.service.TaskRemoveService
 import com.example.firechat.view.adapter.ChattingListRecyclerAdapter
 import com.example.firechat.viewModel.AuthViewModel
@@ -41,10 +42,7 @@ class HomeActivity : AppCompatActivity() {
         // 새로운 채팅 생성 버튼
         // 클릭시 Activity 실행 후 현재 Activity 종료
         newChatButton.setOnClickListener {
-            startActivity(
-                Intent(this, NewChatActivity::class.java)
-                    .putExtra("uid", uid)
-            )
+            startActivity(Intent(this, NewChatActivity::class.java))
             finish()
         }
 
@@ -61,9 +59,9 @@ class HomeActivity : AppCompatActivity() {
         backPressedCallback.isEnabled = false
     }
 
-    // Intent에서 uid를 가져옴
+    // Singleton 객체에서 uid를 가져옴
     private fun initProperty() {
-        uid = intent.getStringExtra("uid").toString()
+        uid = CurrentUserData.uid!!
     }
 
     private fun initView() {
