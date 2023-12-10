@@ -32,8 +32,9 @@ class RegisterActivity : AppCompatActivity() {
     }
 
     // 필드 초기화 메소드
-    // Firebase auth를 회원가입에 사용해야 하기 때문에 인스턴스를 불러옴
     private fun initProperty() {
+        // ViewModel에서 회원가입 시도시 결과에 따라 Event를 발생시킴
+        // 해당 observer는 ViewModel에서 발생한 Event 내용에 따라서 분기함
         viewModel.event.observe(this) { event ->
             event.getContentIfNotHandled()?.let { code ->
                 when (code) {
@@ -85,8 +86,10 @@ class RegisterActivity : AppCompatActivity() {
         val email = inputEmail.text.toString().trim()
         val pw = inputPw.text.toString().trim()
 
-        if (infoValidationCheck(name, email, pw))
+        // 입력 정보에 이상이 없으면 ViewModel의 회원가입 시도 메소드 호출
+        if (infoValidationCheck(name, email, pw)) {
             viewModel.attemptRegister(name, email, pw)
+        }
     }
 
     // 회원 가입시 정보를 제대로 입력했는지 확인하기 위한 유효성 검사용 메소드

@@ -46,6 +46,7 @@ class LoginActivity : AppCompatActivity() {
         sharePreference = getSharedPreferences("loginData", MODE_PRIVATE)
 
         // ViewModel에서 로그인 시도시 결과에 따라 Event를 발생시킴
+        // 아래의 observer는 해당 Event를 관측하고 그 내용에 따라 분기함
         // success면 홈화면으로, 그 외에는 오류 메세지를 사용자에게 표시
         viewModel.event.observe(this) { event ->
             event.getContentIfNotHandled()?.let { code ->
@@ -89,6 +90,9 @@ class LoginActivity : AppCompatActivity() {
 
     // 로그인 성공시 화면 이동 메소드
     private fun updateUI() {
+        // 해당 메소드가 실행된 것은 로그인이 성공적이였다는 의미
+        // SharedPreference에 현재 사용자의 아이디와 패스워드를 저장
+        // 추후에 Application 실행시 마지막으로 로그인한 정보를 자동으로 기입하기 위함
         val editPreference = sharePreference.edit()
 
         editPreference.putString("email", inputEmail.text.toString().trim())

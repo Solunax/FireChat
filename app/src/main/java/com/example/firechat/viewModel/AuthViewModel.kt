@@ -10,6 +10,8 @@ class AuthViewModel : ViewModel(), LoginResultCallBack, RegisterResultCallback {
     private lateinit var _currentUserUID : String
     val currentUserUID get() = _currentUserUID
 
+    // 로그인, 회원가입시 이벤트를 다루기 위한 LiveData
+
     private var _event = MutableLiveData<Event<String>>()
     val event get() = _event
 
@@ -41,7 +43,6 @@ class AuthViewModel : ViewModel(), LoginResultCallBack, RegisterResultCallback {
 
     // 회원가입 결과 반환
     override fun returnRegisterResult(result: String) {
-        Log.d("view model register", result)
         _event.value = Event(result)
     }
 }

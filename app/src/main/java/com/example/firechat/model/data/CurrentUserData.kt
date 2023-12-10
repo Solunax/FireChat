@@ -1,5 +1,6 @@
 package com.example.firechat.model.data
 
+// Application 전역에서 사용할 현재 로그인한 사용자 데이터를 가진 데이터 클래스
 class CurrentUserData {
     companion object {
         var uid: String? = null
