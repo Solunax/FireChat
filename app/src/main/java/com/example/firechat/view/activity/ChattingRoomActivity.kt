@@ -207,7 +207,7 @@ class ChattingRoomActivity : AppCompatActivity() {
     // 리사이클러 뷰에 어댑터를 할당하는 메소드
     private fun setRecycler() {
         messageRecyclerView.layoutManager = LinearLayoutManager(this)
-        messageRecyclerView.adapter = ChattingRoomRecyclerAdapter(this, chatRoomKey, uid)
+        messageRecyclerView.adapter = ChattingRoomRecyclerAdapter(this, chatRoomKey)
         getOpponentOnlineState()
         changeOnlineState(true)
 

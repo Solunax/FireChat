@@ -10,6 +10,7 @@ import com.example.firechat.R
 import com.example.firechat.databinding.NewChatUserSearchResultItemBinding
 import com.example.firechat.model.data.ChattingRoom
 import com.example.firechat.model.data.ChattingState
+import com.example.firechat.model.data.CurrentUserData
 import com.example.firechat.model.data.User
 import com.example.firechat.view.activity.ChattingRoomActivity
 import com.google.firebase.database.DataSnapshot
@@ -18,7 +19,7 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.getValue
 
-class UserSearchRecyclerAdapter(private val uid: String) :
+class UserSearchRecyclerAdapter :
     RecyclerView.Adapter<UserSearchRecyclerAdapter.ViewHolder>() {
     private var userList = ArrayList<User>()
     private var allUserList = ArrayList<User>()
@@ -41,7 +42,7 @@ class UserSearchRecyclerAdapter(private val uid: String) :
                     for (data in snapshot.children) {
                         val item = data.getValue<User>()
 
-                        if (item?.uid.equals(uid)) {
+                        if (item?.uid.equals(CurrentUserData.uid)) {
                             currentUser = item!!
                             continue
                         }
@@ -117,7 +118,7 @@ class UserSearchRecyclerAdapter(private val uid: String) :
                     for (data in snapshot.children) {
                         val userData = data.child("users").value.toString()
 
-                        if (userData.contains(uid) && userData.contains(opponent.uid)) {
+                        if (userData.contains(CurrentUserData.uid!!) && userData.contains(opponent.uid)) {
                             validationCheck = true
                         }
                     }
@@ -144,7 +145,6 @@ class UserSearchRecyclerAdapter(private val uid: String) :
         intent.putExtra("chatRoom", chattingRoom)
         intent.putExtra("opponent", opponent)
         intent.putExtra("chatRoomKey", "")
-        intent.putExtra("uid", uid)
 
         context.startActivity(intent)
         (context as AppCompatActivity).finish()

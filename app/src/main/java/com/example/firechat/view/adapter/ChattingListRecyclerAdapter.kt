@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.firechat.R
 import com.example.firechat.databinding.ChattingListRecyclerItemBinding
 import com.example.firechat.model.data.ChattingRoom
+import com.example.firechat.model.data.CurrentUserData
 import com.example.firechat.model.data.Message
 import com.example.firechat.model.data.User
 import com.example.firechat.view.activity.ChattingRoomActivity
@@ -24,7 +25,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.TimeZone
 
-class ChattingListRecyclerAdapter(private val uid: String) :
+class ChattingListRecyclerAdapter :
     RecyclerView.Adapter<ChattingListRecyclerAdapter.ViewHolder>() {
     val chattingRooms = ArrayList<ChattingRoom>()
     val chattingRoomKeys = ArrayList<String>()
@@ -36,11 +37,12 @@ class ChattingListRecyclerAdapter(private val uid: String) :
         setChattingRooms()
     }
 
-    // 초기 채팅방을 설정하는 메소드
+    // 초기 채팅방 데이터를 설정하는 메소드
     // 현재 사용자가 참여하고 있는 모든 채팅방의 정보를 가져옴
+    // 현재 존재하는 채팅방에서 현재 사용자의 uid를 기준으로 joinState(참여 상태) 가 true인 값만 반환
     private fun setChattingRooms() {
         db.getReference("ChattingRoom")
-            .orderByChild("users/$uid/joinState").equalTo(true)
+            .orderByChild("users/${CurrentUserData.uid}/joinState").equalTo(true)
             .addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     chattingRooms.clear()
@@ -71,7 +73,7 @@ class ChattingListRecyclerAdapter(private val uid: String) :
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val pos = holder.adapterPosition
         val userKeys = chattingRooms[pos].users!!.keys
-        val opponentKey = userKeys.first { it != uid }
+        val opponentKey = userKeys.first { it != CurrentUserData.uid }
         lateinit var opponentUser: User
 
         // 현재 채팅방 정보중 상대방의 UID를 바탕으로 이름 정보를 가져옴
@@ -93,8 +95,10 @@ class ChattingListRecyclerAdapter(private val uid: String) :
                         holder.lastChat.text = lastMessage.content
                         holder.lastSendTime.text =
                             getLastMessageTimeString(lastMessage.sendingDate)
-                        val unReadCount = getUnreadCount(uid, chattingRooms[pos])
+                        val unReadCount = getUnreadCount(CurrentUserData.uid!!, chattingRooms[pos])
 
+                        // 읽지 않은 메세지가 없으면 view의 카운트를 안보이게 설정함
+                        // 읽지 않은 메세지가 있다면 view의 카운트를 보이게 하고, 안읽은 메세지의 갯수로 변경
                         if (unReadCount > 0) {
                             holder.unreadCount.visibility = View.VISIBLE
                             holder.unreadCount.text = unReadCount.toString()
@@ -110,7 +114,7 @@ class ChattingListRecyclerAdapter(private val uid: String) :
 
         // 사용자가 채팅방을 클릭시 사용되는 리스너
         // 채팅방의 정보를 담은 Intent로 채팅방 Activity를 시작함
-        // 그후 현재 Home Activity는 종료함
+        // 그후 Home Activity는 종료함
         holder.chattingRoomBackground.setOnClickListener {
             val intent = Intent(context, ChattingRoomActivity::class.java)
             intent.putExtra("chatRoom", chattingRooms[position])
@@ -145,6 +149,7 @@ class ChattingListRecyclerAdapter(private val uid: String) :
     }
 
     // 현재 사용자가 해당 채팅방에서 읽지 않은 메세지의 갯수를 확인하여 반환하는 메소드
+    // filter 메소드를 사용하여 원하는 결과값(현재 사용자가 보낸 메세지가 아니면서 확인 안한 메세지)만 필터링함
     private fun getUnreadCount(uid: String, chattingRoomData: ChattingRoom): Int {
         return chattingRoomData.messages!!
             .filter { !it.value.confirmed && it.value.senderUid != uid }.size

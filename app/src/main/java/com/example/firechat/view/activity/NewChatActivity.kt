@@ -80,7 +80,7 @@ class NewChatActivity : AppCompatActivity() {
         userRecycler.layoutManager = LinearLayoutManager(this)
         val decoration = DividerItemDecoration(applicationContext, DividerItemDecoration.VERTICAL)
         userRecycler.addItemDecoration(decoration)
-        userRecycler.adapter = UserSearchRecyclerAdapter(uid)
+        userRecycler.adapter = UserSearchRecyclerAdapter()
     }
 
     // 뒤로가기 버튼 클릭시 홈 화면으로 돌아감

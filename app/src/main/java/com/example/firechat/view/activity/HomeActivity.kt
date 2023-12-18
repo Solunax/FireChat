@@ -78,7 +78,7 @@ class HomeActivity : AppCompatActivity() {
         val decoration = DividerItemDecoration(applicationContext, DividerItemDecoration.VERTICAL)
         chattingRoomRecycler.addItemDecoration(decoration)
 
-        chattingRoomRecycler.adapter = ChattingListRecyclerAdapter(uid)
+        chattingRoomRecycler.adapter = ChattingListRecyclerAdapter()
     }
 
     // 로그아웃 메소드

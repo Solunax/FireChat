@@ -9,6 +9,7 @@ import com.example.firechat.R
 import com.example.firechat.model.data.Message
 import com.example.firechat.databinding.MessageMyItemBinding
 import com.example.firechat.databinding.MessageOpponentItemBinding
+import com.example.firechat.model.data.CurrentUserData
 import com.example.firechat.view.activity.ChattingRoomActivity
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -18,8 +19,7 @@ import com.google.firebase.database.getValue
 
 class ChattingRoomRecyclerAdapter(
     private val context: Context,
-    var chattingRoomKey: String,
-    private val uid: String
+    var chattingRoomKey: String
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     val message = ArrayList<Message>()
     val messageKeys = ArrayList<String>()
@@ -60,7 +60,7 @@ class ChattingRoomRecyclerAdapter(
 
     // 메세지를 누가 보냈느냐에 따라서 내용을 분리하는 메소드
     override fun getItemViewType(position: Int): Int {
-        return if (message[position].senderUid == uid) {
+        return if (message[position].senderUid == CurrentUserData.uid) {
             1
         } else {
             0
@@ -89,7 +89,7 @@ class ChattingRoomRecyclerAdapter(
 
     // 메세지를 전송한 사람이 누구인지에 따라서 My, Opponent 분리
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        if (message[position].senderUid == uid) {
+        if (message[position].senderUid == CurrentUserData.uid) {
             (holder as MyMessageViewHolder).bind(position)
         } else {
             (holder as OpponentMessageViewHolder).bind(position)
