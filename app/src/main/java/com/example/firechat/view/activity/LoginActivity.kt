@@ -29,15 +29,7 @@ class LoginActivity : AppCompatActivity() {
 
         initProperty()
         initView()
-
-        loginButton.setOnClickListener {
-            attemptLogin()
-        }
-
-        register.setOnClickListener {
-            val intent = Intent(this, RegisterActivity::class.java)
-            startActivity(intent)
-        }
+        initListener()
     }
 
     // Firebase auth를 로그인 사용해야 하기 때문에 인스턴스를 불러옴
@@ -76,6 +68,17 @@ class LoginActivity : AppCompatActivity() {
 
         inputEmail.setText(sharePreference.getString("email", ""))
         inputPw.setText(sharePreference.getString("pw", ""))
+    }
+
+    private fun initListener() {
+        loginButton.setOnClickListener {
+            attemptLogin()
+        }
+
+        register.setOnClickListener {
+            val intent = Intent(this, RegisterActivity::class.java)
+            startActivity(intent)
+        }
     }
 
     // 로그인 시도 메소드

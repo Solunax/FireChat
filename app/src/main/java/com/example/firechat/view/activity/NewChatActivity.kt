@@ -29,28 +29,9 @@ class NewChatActivity : AppCompatActivity() {
 
         initProperty()
         initView()
-
-        backButton.setOnClickListener {
-            backToHomeActivity()
-        }
-
-        // 사용자 검색창에서 입력에 따라 검색 결과를 표현하기 위한 리스너
-        // 사용자가 이름을 입력한 후 현재 가입자 목록을 가진 리사이클러 뷰에서 이름을 검색함
-        // 검색 결과중 사용자가 입력한 글자가 포함되는 사람의 목록을 표시
-        search.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
-            }
-
-            override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
-            }
-
-            override fun afterTextChanged(name: Editable?) {
-                val adapter = userRecycler.adapter as UserSearchRecyclerAdapter
-                adapter.searchName(name.toString())
-            }
-        })
-
+        initListener()
         setRecycler()
+
         onBackPressedDispatcher.addCallback(this, backPressedCallback)
     }
 
@@ -73,6 +54,28 @@ class NewChatActivity : AppCompatActivity() {
         search = binding.userSearch
         backButton = binding.newChatBack
         userRecycler = binding.userRecycler
+    }
+
+    private fun initListener() {
+        backButton.setOnClickListener {
+            backToHomeActivity()
+        }
+
+        // 사용자 검색창에서 입력에 따라 검색 결과를 표현하기 위한 리스너
+        // 사용자가 이름을 입력한 후 현재 가입자 목록을 가진 리사이클러 뷰에서 이름을 검색함
+        // 검색 결과중 사용자가 입력한 글자가 포함되는 사람의 목록을 표시
+        search.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
+            }
+
+            override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
+            }
+
+            override fun afterTextChanged(name: Editable?) {
+                val adapter = userRecycler.adapter as UserSearchRecyclerAdapter
+                adapter.searchName(name.toString())
+            }
+        })
     }
 
     // 유저 리스트 리사이클러 뷰를 초기화하는 메소드

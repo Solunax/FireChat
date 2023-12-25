@@ -33,18 +33,8 @@ class HomeActivity : AppCompatActivity() {
 
         initProperty()
         initView()
+        initListener()
         setRecycler()
-
-        logoutButton.setOnClickListener {
-            logout()
-        }
-
-        // 새로운 채팅 생성 버튼
-        // 클릭시 Activity 실행 후 현재 Activity 종료
-        newChatButton.setOnClickListener {
-            startActivity(Intent(this, NewChatActivity::class.java))
-            finish()
-        }
 
         // 뒤로가기 버튼 클릭 콜백 연결
         onBackPressedDispatcher.addCallback(this, backPressedCallback)
@@ -68,6 +58,19 @@ class HomeActivity : AppCompatActivity() {
         newChatButton = binding.buttonNewChat
         logoutButton = binding.buttonLogout
         chattingRoomRecycler = binding.chattingRoomRecycler
+    }
+
+    private fun initListener() {
+        logoutButton.setOnClickListener {
+            logout()
+        }
+
+        // 새로운 채팅 생성 버튼
+        // 클릭시 Activity 실행 후 현재 Activity 종료
+        newChatButton.setOnClickListener {
+            startActivity(Intent(this, NewChatActivity::class.java))
+            finish()
+        }
     }
 
     // 리사이클러 뷰를 초기화하는 메소드

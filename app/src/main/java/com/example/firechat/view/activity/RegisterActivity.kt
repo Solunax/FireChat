@@ -25,10 +25,7 @@ class RegisterActivity : AppCompatActivity() {
 
         initProperty()
         initView()
-
-        registerButton.setOnClickListener {
-            attemptRegister()
-        }
+        initListener()
     }
 
     // 필드 초기화 메소드
@@ -78,6 +75,12 @@ class RegisterActivity : AppCompatActivity() {
         inputEmail = binding.email
         inputPw = binding.pw
         registerButton = binding.buttonRegister
+    }
+
+    private fun initListener() {
+        registerButton.setOnClickListener {
+            attemptRegister()
+        }
     }
 
     // 회원가입 시도 메소드

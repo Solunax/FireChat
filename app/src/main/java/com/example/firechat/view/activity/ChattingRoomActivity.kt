@@ -59,20 +59,8 @@ class ChattingRoomActivity : AppCompatActivity() {
 
         initProperty()
         initView()
+        initListener()
         setChattingRoom()
-
-        // 뒤로가기 버튼을 누를시 홈 화면 Activity를 실행
-        // 실행 후 현재 Activity 종료
-        goBackButton.setOnClickListener {
-            finishCheck = true
-            changeOnlineState(false)
-            backToHomeActivity()
-        }
-
-        // 메세지 전송 버튼을 누를시 현재 입력한 메세지를 서버에 저장
-        sendMessageButton.setOnClickListener {
-            sendMessage()
-        }
 
         onBackPressedDispatcher.addCallback(this, backPressedCallback)
     }
@@ -146,6 +134,22 @@ class ChattingRoomActivity : AppCompatActivity() {
         topLayout = binding.constraintTop
 
         opponentName.text = opponentUser.name
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun initListener() {
+        // 뒤로가기 버튼을 누를시 홈 화면 Activity를 실행
+        // 실행 후 현재 Activity 종료
+        goBackButton.setOnClickListener {
+            finishCheck = true
+            changeOnlineState(false)
+            backToHomeActivity()
+        }
+
+        // 메세지 전송 버튼을 누를시 현재 입력한 메세지를 서버에 저장
+        sendMessageButton.setOnClickListener {
+            sendMessage()
+        }
     }
 
     // 채팅방 초기화 메소드
