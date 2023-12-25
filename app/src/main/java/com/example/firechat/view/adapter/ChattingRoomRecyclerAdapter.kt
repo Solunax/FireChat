@@ -138,7 +138,11 @@ class ChattingRoomRecyclerAdapter(
 
                 if (hour.toInt() > 11) {
                     dateText += "오후 "
-                    dateText += timeFormat.format(hour.toInt() - 12, minute.toInt())
+                    dateText += if (hour.toInt() == 12) {
+                        timeFormat.format(hour.toInt(), minute.toInt())
+                    } else {
+                        timeFormat.format(hour.toInt() - 12, minute.toInt())
+                    }
                 } else {
                     dateText += "오전 "
                     dateText += timeFormat.format(hour.toInt(), minute.toInt())
