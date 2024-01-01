@@ -1,6 +1,7 @@
 package com.example.firechat.view.adapter
 
 import android.content.Context
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -9,6 +10,7 @@ import com.example.firechat.R
 import com.example.firechat.model.data.Message
 import com.example.firechat.databinding.MessageMyItemBinding
 import com.example.firechat.databinding.MessageOpponentItemBinding
+import com.example.firechat.model.data.ChattingRoomTimeData
 import com.example.firechat.model.data.CurrentUserData
 import com.example.firechat.view.activity.ChattingRoomActivity
 import com.google.firebase.database.DataSnapshot
@@ -16,6 +18,7 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.getValue
+import java.lang.StringBuilder
 
 class ChattingRoomRecyclerAdapter(
     private val context: Context,
@@ -122,33 +125,26 @@ class ChattingRoomRecyclerAdapter(
         }
 
         // 메세지가 전송된 시간을 YYYY-MM-DD HH:MM 형식 문자열로 만들어주는 메소드
-        private fun getDateText(sendDate: String): String {
-            var dateText = "${sendDate.substring(0, 4)}-${sendDate.substring(4, 6)}-${
-                sendDate.substring(
-                    6,
-                    8
-                )
-            }\n"
-            val timeString: String
-            if (sendDate.isNotBlank()) {
-                timeString = sendDate.substring(8, 12)
-                val hour = timeString.substring(0, 2)
-                val minute = timeString.substring(2, 4)
-                val timeFormat = "%02d:%02d"
+        private fun getDateText(sendTime: String): String {
+            val timeData = ChattingRoomTimeData(sendTime)
+            val timeText = StringBuilder()
+            val dateFormat = "%04d-%02d-%02d"
+            val timeFormat = "%02d:%02d"
 
-                if (hour.toInt() > 11) {
-                    dateText += "오후 "
-                    dateText += if (hour.toInt() == 12) {
-                        timeFormat.format(hour.toInt(), minute.toInt())
-                    } else {
-                        timeFormat.format(hour.toInt() - 12, minute.toInt())
-                    }
-                } else {
-                    dateText += "오전 "
-                    dateText += timeFormat.format(hour.toInt(), minute.toInt())
-                }
+            timeText.append("${dateFormat.format(timeData.year, timeData.month, timeData.date)}\n")
+            Log.d("D", "${timeData.year} ${timeData.month} ${timeData.date} ${timeData.hour} ${timeData.minute}")
+
+            if (timeData.hour == 24) {
+                timeText.append("오전 ${timeFormat.format(0, timeData.minute)}")
+            } else if (timeData.hour == 12) {
+                timeText.append("오후 ${timeFormat.format(12, timeData.minute)}")
+            } else if (timeData.hour > 12) {
+                timeText.append("오후 ${timeFormat.format(timeData.hour - 12, timeData.minute)}")
+            } else {
+                timeText.append("오전 ${timeFormat.format(timeData.hour, timeData.minute)}")
             }
-            return dateText
+
+            return timeText.toString()
         }
     }
 
@@ -184,29 +180,27 @@ class ChattingRoomRecyclerAdapter(
         }
 
         // 메세지가 전송된 시간을 YYYY-MM-DD HH:MM 형식 문자열로 만들어주는 메소드
-        private fun getDateText(sendDate: String): String {
-            var dateText = "${sendDate.substring(0, 4)}-${sendDate.substring(4, 6)}-${
-                sendDate.substring(
-                    6,
-                    8
-                )
-            }\n"
-            val timeString: String
-            if (sendDate.isNotBlank()) {
-                timeString = sendDate.substring(8, 12)
-                val hour = timeString.substring(0, 2)
-                val minute = timeString.substring(2, 4)
-                val timeFormat = "%02d:%02d"
+        private fun getDateText(sendTime: String): String {
+            val timeData = ChattingRoomTimeData(sendTime)
+            val timeText = StringBuilder()
+            val dateFormat = "%04d-%02d-%02d"
+            val timeFormat = "%02d:%02d"
 
-                if (hour.toInt() > 11) {
-                    dateText += "오후 "
-                    dateText += timeFormat.format(hour.toInt() - 12, minute.toInt())
-                } else {
-                    dateText += "오전 "
-                    dateText += timeFormat.format(hour.toInt(), minute.toInt())
-                }
+            timeText.append("${dateFormat.format(timeData.year, timeData.month, timeData.date)}\n")
+            Log.d("D","$timeText")
+            Log.d("D", "${timeData.year} ${timeData.month} ${timeData.date} ${timeData.hour} ${timeData.minute}")
+
+            if (timeData.hour == 24) {
+                timeText.append("오전 ${timeFormat.format(0, timeData.minute)}")
+            } else if (timeData.hour == 12) {
+                timeText.append("오후 ${timeFormat.format(12, timeData.minute)}")
+            } else if (timeData.hour > 12) {
+                timeText.append("오후 ${timeFormat.format(timeData.hour - 12, timeData.minute)}")
+            } else {
+                timeText.append("오전 ${timeFormat.format(timeData.hour, timeData.minute)}")
             }
-            return dateText
+
+            return timeText.toString()
         }
     }
 }

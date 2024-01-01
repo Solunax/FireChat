@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.firechat.R
 import com.example.firechat.databinding.ChattingListRecyclerItemBinding
 import com.example.firechat.model.data.ChattingRoom
+import com.example.firechat.model.data.ChattingRoomTimeData
 import com.example.firechat.model.data.CurrentUserData
 import com.example.firechat.model.data.Message
 import com.example.firechat.model.data.User
@@ -160,25 +161,14 @@ class ChattingListRecyclerAdapter :
     private fun getLastMessageTimeString(lastTimeString: String): String {           //마지막 메시지가 전송된 시각 구하기
         val currentTime = LocalDateTime.now().atZone(TimeZone.getDefault().toZoneId()) //현재 시각
         val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
+        val nowTimeData = ChattingRoomTimeData(currentTime.format(dateTimeFormatter))
+        val lastTimeData = ChattingRoomTimeData(lastTimeString)
 
-        val messageMonth =
-            lastTimeString.substring(4, 6).toInt()                   //마지막 메시지 시각 월,일,시,분
-        val messageDate = lastTimeString.substring(6, 8).toInt()
-        val messageHour = lastTimeString.substring(8, 10).toInt()
-        val messageMinute = lastTimeString.substring(10, 12).toInt()
-
-        val formattedCurrentTimeString =
-            currentTime.format(dateTimeFormatter)     //현 시각 월,일,시,분
-        val currentMonth = formattedCurrentTimeString.substring(4, 6).toInt()
-        val currentDate = formattedCurrentTimeString.substring(6, 8).toInt()
-        val currentHour = formattedCurrentTimeString.substring(8, 10).toInt()
-        val currentMinute = formattedCurrentTimeString.substring(10, 12).toInt()
-
-        val monthAgo =
-            currentMonth - messageMonth                           //현 시각과 마지막 메시지 시각과의 차이. 월,일,시,분
-        val dayAgo = currentDate - messageDate
-        val hourAgo = currentHour - messageHour
-        val minuteAgo = currentMinute - messageMinute
+        //현 시각과 마지막 메시지 시각과의 차이. 월,일,시,분
+        val monthAgo = nowTimeData.month - lastTimeData.month
+        val dayAgo = nowTimeData.date - lastTimeData.date
+        val hourAgo = nowTimeData.hour - lastTimeData.hour
+        val minuteAgo = nowTimeData.minute - lastTimeData.minute
 
         //1개월 이상 차이 나는 경우
         if (monthAgo > 0) {
