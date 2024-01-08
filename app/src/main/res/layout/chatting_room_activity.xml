@@ -18,9 +18,9 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:backgroundTint="@android:color/transparent"
+            app:layout_constraintTop_toTopOf="@+id/chatting_room_opponent_user_name"
             app:layout_constraintBottom_toBottomOf="@+id/chatting_room_opponent_user_name"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/chatting_room_opponent_user_name"
             app:srcCompat="@drawable/chattingroom_icon_back_button" />
 
         <TextView
@@ -32,9 +32,19 @@
             android:textColor="@color/white"
             android:textSize="30sp"
             android:textStyle="bold"
-            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageButton
+            android:id="@+id/chatting_room_quit"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:backgroundTint="@android:color/transparent"
+            app:layout_constraintTop_toTopOf="@id/chatting_room_opponent_user_name"
+            app:layout_constraintBottom_toBottomOf="@id/chatting_room_opponent_user_name"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:src="@drawable/chattingroom_icon_white_quit_button"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

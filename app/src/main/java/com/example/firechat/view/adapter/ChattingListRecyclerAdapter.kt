@@ -7,12 +7,14 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.RecyclerView
 import com.example.firechat.R
 import com.example.firechat.databinding.ChattingListRecyclerItemBinding
 import com.example.firechat.model.data.ChattingRoom
 import com.example.firechat.model.data.ChattingRoomTimeData
+import com.example.firechat.model.data.ChattingState
 import com.example.firechat.model.data.CurrentUserData
 import com.example.firechat.model.data.Message
 import com.example.firechat.model.data.User
@@ -23,7 +25,9 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.getValue
 import java.time.LocalDateTime
+import java.time.Month
 import java.time.format.DateTimeFormatter
+import java.util.Calendar
 import java.util.TimeZone
 
 class ChattingListRecyclerAdapter :
@@ -125,6 +129,24 @@ class ChattingListRecyclerAdapter :
             context.startActivity(intent)
             (context as AppCompatActivity).finish()
         }
+
+        holder.chattingRoomBackground.setOnLongClickListener {
+            AlertDialog.Builder(context)
+                .setTitle("채팅방 나가기")
+                .setMessage("채팅방에서 나가시겠습니까?")
+                .setPositiveButton("확인") { dialog, _ ->
+                    db.getReference("ChattingRoom").child(chattingRoomKeys[position])
+                        .child("users").child("${CurrentUserData.uid}")
+                        .child("joinState").setValue(false)
+
+                    chattingRoomAvailableCheck(chattingRoomKeys[position])
+                }
+                .setNegativeButton("취소") { dialog, _ ->
+                    dialog.dismiss()
+                }.show()
+
+            return@setOnLongClickListener true
+        }
     }
 
     override fun getItemId(position: Int): Long {
@@ -156,6 +178,36 @@ class ChattingListRecyclerAdapter :
             .filter { !it.value.confirmed && it.value.senderUid != uid }.size
     }
 
+    // 채팅방이 유효한지(참여한 유저가 존재하는지) 확인하는 메소드
+    // 유효하지 않다면 DB에서 해당 채팅방을 삭제함
+    private fun chattingRoomAvailableCheck(roomKey: String) {
+        db.getReference("ChattingRoom").child(roomKey)
+            .child("users").addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    var total = 0
+                    var check = 0
+
+                    for (data in snapshot.children) {
+                        val stateData = data.getValue<ChattingState>()
+                        if (!stateData!!.onlineState) {
+                            check++
+                        }
+                        total++
+                    }
+
+                    // total 값은 채팅방에 존재하는 유저의 수
+                    // check 값은 채팅방에서 나간 유저의 수
+                    // 총 유저의 수와 나간 유저의 수가 같으면 DB에서 채팅방을 삭제함
+                    if (total == check) {
+                        db.getReference("ChattingRoom").child(roomKey).removeValue()
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                }
+            })
+    }
+
     // 마지막으로 전송된 메세지의 시간을 확인하여 채팅목록에 표시하기 적절한 형태로 문자열을 수정하는 메소드
     @RequiresApi(Build.VERSION_CODES.O)
     private fun getLastMessageTimeString(lastTimeString: String): String {           //마지막 메시지가 전송된 시각 구하기
@@ -163,37 +215,52 @@ class ChattingListRecyclerAdapter :
         val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
         val nowTimeData = ChattingRoomTimeData(currentTime.format(dateTimeFormatter))
         val lastTimeData = ChattingRoomTimeData(lastTimeString)
+        val nowCalendar = Calendar.getInstance().apply { time = nowTimeData.dateTime }
+        val lastCalendar = Calendar.getInstance().apply { time = lastTimeData.dateTime }
+
 
         //현 시각과 마지막 메시지 시각과의 차이. 월,일,시,분
-        val monthAgo = nowTimeData.month - lastTimeData.month
-        val dayAgo = nowTimeData.date - lastTimeData.date
-        val hourAgo = nowTimeData.hour - lastTimeData.hour
-        val minuteAgo = nowTimeData.minute - lastTimeData.minute
+        val diffValue = nowTimeData.dateTime.time - lastTimeData.dateTime.time
+        val minuteAgo = diffValue / (60 * 1000)
+        val hourAgo = diffValue / (60 * 60 * 1000)
+        val dayAgo = diffValue / (24 * 60 * 60 * 1000)
 
-        //1개월 이상 차이 나는 경우
-        if (monthAgo > 0) {
+        val yearAgo = nowCalendar.get(Calendar.YEAR) - lastCalendar.get(Calendar.YEAR)
+        var monthAgo = yearAgo * 12 + nowCalendar.get(Calendar.MONTH) - lastCalendar.get(Calendar.MONTH)
+
+        if (nowCalendar.get(Calendar.DAY_OF_MONTH) < lastCalendar.get(Calendar.DAY_OF_MONTH)) {
+            monthAgo--
+        }
+
+        // 1년 이상
+        if (yearAgo > 0 && monthAgo >= 12) {
+            return yearAgo.toString() + "년 전"
+        }
+
+        // 1개월 이상
+        if (monthAgo > 0 && dayAgo >= 30) {
             return monthAgo.toString() + "개월 전"
-        } else {
-            //1일 이상 차이 나는 경우
-            return if (dayAgo > 0) {
-                if (dayAgo == 1) {
-                    "어제"
-                } else {
-                    dayAgo.toString() + "일 전"
-                }
+        }
+
+        // 1일 이상
+        if (dayAgo > 0) {
+            return if (dayAgo == 1L) {
+                "어제"
             } else {
-                //1시간 이상 차이 나는 경우
-                if (hourAgo > 0) {
-                    hourAgo.toString() + "시간 전"
-                } else {
-                    //1분 이상 차이 나는 경우
-                    if (minuteAgo > 0) {
-                        minuteAgo.toString() + "분 전"
-                    } else {
-                        "방금"
-                    }
-                }
+                dayAgo.toString() + "일 전"
             }
+        }
+
+        // 1시간 이상
+        if (hourAgo > 0) {
+            return hourAgo.toString() + "시간 전"
+        }
+
+        // 1분 이상
+        return if (minuteAgo > 0) {
+            minuteAgo.toString() + "분 전"
+        } else {
+            "방금"
         }
     }
 }

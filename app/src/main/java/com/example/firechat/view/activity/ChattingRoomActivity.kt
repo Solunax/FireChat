@@ -12,6 +12,7 @@ import android.widget.ImageButton
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -36,6 +37,7 @@ class ChattingRoomActivity : AppCompatActivity() {
     private lateinit var binding: ChattingRoomActivityBinding
     private lateinit var topLayout: ConstraintLayout
     private lateinit var goBackButton: ImageButton
+    private lateinit var quitButton: ImageButton
     private lateinit var sendMessageButton: ImageButton
     private lateinit var messageInput: EditText
     private lateinit var opponentName: TextView
@@ -49,7 +51,8 @@ class ChattingRoomActivity : AppCompatActivity() {
     lateinit var messageRecyclerView: RecyclerView
     private val db = FirebaseDatabase.getInstance()
     private var finishCheck = false
-    private lateinit var messageRect : Rect
+    private var joinState = true
+    private lateinit var messageRect: Rect
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -130,6 +133,7 @@ class ChattingRoomActivity : AppCompatActivity() {
         messageInput = binding.messageInput
         messageRecyclerView = binding.messageRecycler
         sendMessageButton = binding.sendMessage
+        quitButton = binding.chattingRoomQuit
         opponentName = binding.chattingRoomOpponentUserName
         topLayout = binding.constraintTop
 
@@ -149,6 +153,23 @@ class ChattingRoomActivity : AppCompatActivity() {
         // 메세지 전송 버튼을 누를시 현재 입력한 메세지를 서버에 저장
         sendMessageButton.setOnClickListener {
             sendMessage()
+        }
+
+        // 채팅방 나가기 버튼을 누를시 Alert Dialog 생성
+        // 만약 채팅방에서 나간다면 joinState를 false로 변경하고 앱의 홈 액티비티로 전환
+        // activity가 종료 되면서 joinState는 DB에 저장됨
+        quitButton.setOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle("채팅방 나가기")
+                .setMessage("채팅방에서 나가시겠습니까?")
+                .setPositiveButton("확인") { dialog, _ ->
+                    joinState = false
+                    chattingRoomAvailableCheck(chatRoomKey)
+                    backToHomeActivity()
+                }
+                .setNegativeButton("취소") { dialog, _ ->
+                    dialog.dismiss()
+                }.show()
         }
     }
 
@@ -265,7 +286,37 @@ class ChattingRoomActivity : AppCompatActivity() {
     private fun changeOnlineState(state: Boolean) {
         db.getReference("ChattingRoom")
             .child(chatRoomKey).child("users")
-            .child(uid).setValue(ChattingState(true, state))
+            .child(uid).setValue(ChattingState(joinState, state))
+    }
+
+    // 채팅방이 유효한지(참여한 유저가 존재하는지) 확인하는 메소드
+    // 유효하지 않다면 DB에서 해당 채팅방을 삭제함
+    private fun chattingRoomAvailableCheck(roomKey: String) {
+        db.getReference("ChattingRoom").child(roomKey)
+            .child("users").addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    var total = 0
+                    var check = 0
+
+                    for (data in snapshot.children) {
+                        val stateData = data.getValue<ChattingState>()
+                        if (!stateData!!.onlineState) {
+                            check++
+                        }
+                        total++
+                    }
+
+                    // total 값은 채팅방에 존재하는 유저의 수
+                    // check 값은 채팅방에서 나간 유저의 수
+                    // 총 유저의 수와 나간 유저의 수가 같으면 DB에서 채팅방을 삭제함
+                    if (total == check) {
+                        db.getReference("ChattingRoom").child(roomKey).removeValue()
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                }
+            })
     }
 
     // Home Activity로 돌아가는 메소드
