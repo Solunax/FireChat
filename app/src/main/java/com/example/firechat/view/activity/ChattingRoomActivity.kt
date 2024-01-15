@@ -50,7 +50,7 @@ class ChattingRoomActivity : AppCompatActivity() {
     private var opponentUserOnlineState = false
     lateinit var messageRecyclerView: RecyclerView
     private val db = FirebaseDatabase.getInstance()
-    private var finishCheck = false
+    private var finishCheck = true
     private var joinState = true
     private lateinit var messageRect: Rect
 
@@ -98,9 +98,7 @@ class ChattingRoomActivity : AppCompatActivity() {
         super.onDestroy()
         backPressedCallback.isEnabled = false
 
-        if (!finishCheck) {
-            changeOnlineState(false)
-        }
+        changeOnlineState(false)
     }
 
     // 이전 Activity에서 넘겨준 값들을 현재 Activity에 기입
@@ -164,6 +162,9 @@ class ChattingRoomActivity : AppCompatActivity() {
                 .setMessage("채팅방에서 나가시겠습니까?")
                 .setPositiveButton("확인") { dialog, _ ->
                     joinState = false
+                    changeOnlineState(false)
+
+                    finishCheck = false
                     chattingRoomAvailableCheck(chatRoomKey)
                     backToHomeActivity()
                 }
@@ -217,8 +218,7 @@ class ChattingRoomActivity : AppCompatActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     private fun sendMessage() {
         if (messageInput.text.isNotEmpty()) {
-            val message =
-                Message(uid, getTimeData(), messageInput.text.toString(), opponentUserOnlineState)
+            val message = Message(uid, getTimeData(), messageInput.text.toString(), opponentUserOnlineState)
 
             db.getReference("ChattingRoom")
                 .child(chatRoomKey).child("messages")
@@ -253,8 +253,9 @@ class ChattingRoomActivity : AppCompatActivity() {
             .addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     for (data in snapshot.children) {
-                        if (data.key == opponentUser.uid)
+                        if (data.key == opponentUser.uid) {
                             opponentUserOnlineState = data.getValue<ChattingState>()!!.onlineState
+                        }
                     }
                 }
 
@@ -284,9 +285,11 @@ class ChattingRoomActivity : AppCompatActivity() {
     // 이 메소드는 메세지 전송시 읽은 상태 값을 설정하기 위해 DB 값을 수정함
     // 만약 false로 수정시 채팅방을 나간다는 뜻이므로 backToHomeActivity 메소드 호출
     private fun changeOnlineState(state: Boolean) {
-        db.getReference("ChattingRoom")
-            .child(chatRoomKey).child("users")
-            .child(uid).setValue(ChattingState(joinState, state))
+        if (finishCheck) {
+            db.getReference("ChattingRoom")
+                .child(chatRoomKey).child("users")
+                .child(uid).setValue(ChattingState(joinState, state))
+        }
     }
 
     // 채팅방이 유효한지(참여한 유저가 존재하는지) 확인하는 메소드
@@ -305,7 +308,6 @@ class ChattingRoomActivity : AppCompatActivity() {
                         }
                         total++
                     }
-
                     // total 값은 채팅방에 존재하는 유저의 수
                     // check 값은 채팅방에서 나간 유저의 수
                     // 총 유저의 수와 나간 유저의 수가 같으면 DB에서 채팅방을 삭제함

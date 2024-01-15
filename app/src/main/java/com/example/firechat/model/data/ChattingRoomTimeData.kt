@@ -20,6 +20,6 @@ class ChattingRoomTimeData(timeString: String) {
         date = timeString.substring(6, 8).toInt()
         hour = timeString.substring(8, 10).toInt()
         minute = timeString.substring(10, 12).toInt()
-        dateTime = SimpleDateFormat("yyyyMMddHHmm").parse(timeString)!!
+        dateTime = SimpleDateFormat("yyyyMMddHHmmss").parse(timeString)!!
     }
 }

@@ -49,7 +49,7 @@ class HomeActivity : AppCompatActivity() {
         backPressedCallback.isEnabled = false
     }
 
-    // Singleton 객체에서 uid를 가져옴
+    // 현재 사용자 정보를 가지고 있는 Singleton 객체에서 uid를 가져옴
     private fun initProperty() {
         uid = CurrentUserData.uid!!
     }
@@ -74,7 +74,6 @@ class HomeActivity : AppCompatActivity() {
     }
 
     // 리사이클러 뷰를 초기화하는 메소드
-    // 리사이클러 어댑터에 현재 사용자의 uid를 인자로 넘겨서 활용함
     // decoration을 사용해 Item에 구분선을 추가함
     private fun setRecycler() {
         chattingRoomRecycler.layoutManager = LinearLayoutManager(this)

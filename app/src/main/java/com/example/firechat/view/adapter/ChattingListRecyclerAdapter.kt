@@ -24,11 +24,8 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.getValue
-import java.time.LocalDateTime
-import java.time.Month
-import java.time.format.DateTimeFormatter
 import java.util.Calendar
-import java.util.TimeZone
+import java.util.concurrent.TimeUnit
 
 class ChattingListRecyclerAdapter :
     RecyclerView.Adapter<ChattingListRecyclerAdapter.ViewHolder>() {
@@ -134,7 +131,7 @@ class ChattingListRecyclerAdapter :
             AlertDialog.Builder(context)
                 .setTitle("채팅방 나가기")
                 .setMessage("채팅방에서 나가시겠습니까?")
-                .setPositiveButton("확인") { dialog, _ ->
+                .setPositiveButton("확인") { _, _ ->
                     db.getReference("ChattingRoom").child(chattingRoomKeys[position])
                         .child("users").child("${CurrentUserData.uid}")
                         .child("joinState").setValue(false)
@@ -210,57 +207,38 @@ class ChattingListRecyclerAdapter :
 
     // 마지막으로 전송된 메세지의 시간을 확인하여 채팅목록에 표시하기 적절한 형태로 문자열을 수정하는 메소드
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun getLastMessageTimeString(lastTimeString: String): String {           //마지막 메시지가 전송된 시각 구하기
-        val currentTime = LocalDateTime.now().atZone(TimeZone.getDefault().toZoneId()) //현재 시각
-        val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
-        val nowTimeData = ChattingRoomTimeData(currentTime.format(dateTimeFormatter))
+    private fun getLastMessageTimeString(lastTimeString: String): String {           //마지막 메세지가 전송된 시각 구하기
         val lastTimeData = ChattingRoomTimeData(lastTimeString)
-        val nowCalendar = Calendar.getInstance().apply { time = nowTimeData.dateTime }
-        val lastCalendar = Calendar.getInstance().apply { time = lastTimeData.dateTime }
+        val currentTime = Calendar.getInstance().timeInMillis
+        val lastTime = Calendar.getInstance().apply { time = lastTimeData.dateTime }.timeInMillis
 
+        //현 시각과 마지막 메세지 시각과의 차이. 월,일,시,분
+        val diffValue = currentTime - lastTime
 
-        //현 시각과 마지막 메시지 시각과의 차이. 월,일,시,분
-        val diffValue = nowTimeData.dateTime.time - lastTimeData.dateTime.time
-        val minuteAgo = diffValue / (60 * 1000)
-        val hourAgo = diffValue / (60 * 60 * 1000)
-        val dayAgo = diffValue / (24 * 60 * 60 * 1000)
-
-        val yearAgo = nowCalendar.get(Calendar.YEAR) - lastCalendar.get(Calendar.YEAR)
-        var monthAgo = yearAgo * 12 + nowCalendar.get(Calendar.MONTH) - lastCalendar.get(Calendar.MONTH)
-
-        if (nowCalendar.get(Calendar.DAY_OF_MONTH) < lastCalendar.get(Calendar.DAY_OF_MONTH)) {
-            monthAgo--
-        }
-
-        // 1년 이상
-        if (yearAgo > 0 && monthAgo >= 12) {
-            return yearAgo.toString() + "년 전"
-        }
-
-        // 1개월 이상
-        if (monthAgo > 0 && dayAgo >= 30) {
-            return monthAgo.toString() + "개월 전"
-        }
-
-        // 1일 이상
-        if (dayAgo > 0) {
-            return if (dayAgo == 1L) {
-                "어제"
-            } else {
-                dayAgo.toString() + "일 전"
+        return when {
+            diffValue < 60000 -> {
+                "방금 전"
             }
-        }
+            diffValue < 3600000 -> {
+                TimeUnit.MILLISECONDS.toMinutes(diffValue).toString() + "분 전"
+            }
 
-        // 1시간 이상
-        if (hourAgo > 0) {
-            return hourAgo.toString() + "시간 전"
-        }
+            diffValue < 86400000 -> {
+                TimeUnit.MILLISECONDS.toHours(diffValue).toString() + "시간 전"
+            }
 
-        // 1분 이상
-        return if (minuteAgo > 0) {
-            minuteAgo.toString() + "분 전"
-        } else {
-            "방금"
+            diffValue < 604800000 -> {
+                TimeUnit.MILLISECONDS.toDays(diffValue).toString() + "일 전"
+            }
+            diffValue < 2419200000 -> {
+                TimeUnit.MILLISECONDS.toDays(diffValue / 7).toString() + "주 전"
+            }
+            diffValue < 31556952000 -> {
+                TimeUnit.MILLISECONDS.toDays(diffValue / 30).toString() + "개월 전"
+            }
+            else -> {
+                TimeUnit.MILLISECONDS.toDays(diffValue / 365).toString() + "년 전"
+            }
         }
     }
 }
