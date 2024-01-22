@@ -71,15 +71,18 @@ class ChattingRoomActivity : AppCompatActivity() {
     // 소프트 키보드가 활성화된 상태에서 다른곳 터치시 소프트 키보드를 비활성화함
     override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
         if (ev?.action == MotionEvent.ACTION_DOWN) {
+            // 사용자가 터치시 터치한 View의 포커스가 messageInput(EditText) 이면 코드 실행
             if (currentFocus == messageInput) {
-                // 소프트 키보드 활성화 상태에서 메세지 레이아웃의 좌표를 저장
+                // messageRect가 초기화된 상태가 아니면(최초 1회)
+                // 소프트 키보드가 활성화 된 상태에서
+                // 메세지 입력하는 EditText + 전송 버튼을 포함한 Constraint Bottom 의 위치값(x, y)을 저장
                 if (!::messageRect.isInitialized) {
                     messageRect = Rect()
                     binding.constraintBottom.getGlobalVisibleRect(messageRect)
                 }
 
-                // EditText와 ImageButton이 있는 레이아웃의 좌표를 바탕으로
-                // 이벤트가 발생한 지점이 해당 레이아웃 밖이면 소프트 키보드를 비활성화
+                // 소프트 키보드가 활성화된 상태에서의 ConstraintBottom 좌표를 바탕으로
+                // 터치 이벤트가 발생한 지점이 해당 레이아웃 밖이면 소프트 키보드를 숨기고, EditText의 포커스를 제거
                 if (!messageRect.contains(ev.x.toInt(), ev.y.toInt())) {
                     inputMethodManager.hideSoftInputFromWindow(this.currentFocus?.windowToken, 0)
                     messageInput.clearFocus()
@@ -90,23 +93,23 @@ class ChattingRoomActivity : AppCompatActivity() {
         return super.dispatchTouchEvent(ev)
     }
 
-    // 메모리 누수 방지를 위해 Destroy시 콜백을 비활성화
-    // 채팅방에서 완전히 나갈시(Destroy) 채팅방 접속 상태 변경
-    // 뒤로가기 버튼으로 인해 뒤로가기시
-    // 접속 상태 변경 메소드가 중복실행되지 않게 flag 값 확인
+    // 메모리 누수 방지를 위해 Destroy 시 콜백을 비활성화
+    // 채팅방 Activity Destroy 시 채팅방 접속 상태 변경
+    // 접속 상태 변경 메소드가 중복실행되지 않게 flag 값 확인(채팅방 나가기 기능 사용시 flag값 변경)
     override fun onDestroy() {
         super.onDestroy()
         backPressedCallback.isEnabled = false
 
-        changeOnlineState(false)
+        if (finishCheck) {
+            changeOnlineState(false)
+        }
     }
 
     // 이전 Activity에서 넘겨준 값들을 현재 Activity에 기입
     // uid는 Singleton 객체에서 가져옴
     // 기입된 데이터를 바탕으로 채팅방을 구성함
     // 정보는 채팅방 정보(사용자), 채팅방 고유 Key(ID) 를 포함함
-    // 소프트키보드가 열린 상태로 다른곳을 터치하면 소프트 키보드를 닫는 기능을 위해
-    // InputMethodManager 사용
+    // 소프트키보드가 열린 상태로 다른곳을 터치하면 소프트 키보드를 닫는 기능을 위해 InputMethodManager 사용
     private fun initProperty() {
         uid = CurrentUserData.uid!!
         chatRoom = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -143,8 +146,6 @@ class ChattingRoomActivity : AppCompatActivity() {
         // 뒤로가기 버튼을 누를시 홈 화면 Activity를 실행
         // 실행 후 현재 Activity 종료
         goBackButton.setOnClickListener {
-            finishCheck = true
-            changeOnlineState(false)
             backToHomeActivity()
         }
 
@@ -164,6 +165,8 @@ class ChattingRoomActivity : AppCompatActivity() {
                     joinState = false
                     changeOnlineState(false)
 
+                    // 이 시점에서 flag를 변경하는 이유는 flag가 true인 상태로 activity 종료시
+                    // back
                     finishCheck = false
                     chattingRoomAvailableCheck(chatRoomKey)
                     backToHomeActivity()
@@ -213,8 +216,8 @@ class ChattingRoomActivity : AppCompatActivity() {
     // 사용자가 입력한 채팅을 Message 클래스 형식에 맞게 생성하여 서버에 저장함
     // Message의 형식은 UID, 현재 시간 정보, 메세지 내용, 읽은 상태로 구성됨
     // 읽은 상태는 현재 상대방이 채팅방 접속 상태에 따라 결정함
-    // 예를들어, 상대가 이미 채팅방에 접속한 상태라면 안읽었다는 표시를 할 필요가 없음 따라서 Message 클래스에 onlineState를 true로
-    // 아닐경우는 false로 보냄
+    // 예를들어, 상대가 채팅방에 접속한 상태라면 Message 인스턴스의 confirmed 값은 true로
+    // 아닐경우는 false로 지정 후 DB에 저장
     @RequiresApi(Build.VERSION_CODES.O)
     private fun sendMessage() {
         if (messageInput.text.isNotEmpty()) {
@@ -230,6 +233,7 @@ class ChattingRoomActivity : AppCompatActivity() {
     }
 
     // 리사이클러 뷰에 어댑터를 할당하는 메소드
+    // 이 시점에서 사용자가 채팅방을 보는 상태라는 것을 DB에 저장(changeOnlineState - state = true)
     private fun setRecycler() {
         messageRecyclerView.layoutManager = LinearLayoutManager(this)
         messageRecyclerView.adapter = ChattingRoomRecyclerAdapter(this, chatRoomKey)
@@ -237,6 +241,7 @@ class ChattingRoomActivity : AppCompatActivity() {
         changeOnlineState(true)
 
         // 소프트 키보드 사용시 리사이클러 뷰의 마지막 항목을 표시하는 기능을 수행
+        // 메세지 갯수가 1개 이상일 경우 수행
         messageRecyclerView.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
             messageRecyclerView.post {
                 messageRecyclerView.adapter?.itemCount?.takeIf { it > 0 }?.let {
@@ -273,23 +278,21 @@ class ChattingRoomActivity : AppCompatActivity() {
         return localDateTime.format(dateTimeFormatter).toString()
     }
 
-    // 뒤로가기 버튼 클릭시 온라인상태 변경 메소드 호출
+    // 뒤로가기 버튼 클릭시 backToHomeActivity 메소드 호출
     private val backPressedCallback = object : OnBackPressedCallback(true) {
         override fun handleOnBackPressed() {
-            changeOnlineState(false)
             backToHomeActivity()
         }
     }
 
-    // 현재 채팅방을 나갈시 현재 채팅방의 온라인 상태를 바꾸는 메소드
-    // 이 메소드는 메세지 전송시 읽은 상태 값을 설정하기 위해 DB 값을 수정함
-    // 만약 false로 수정시 채팅방을 나간다는 뜻이므로 backToHomeActivity 메소드 호출
+    // 채팅방의 온라인 상태를 바꾸는 메소드
+    // 이 메소드는 사용자의 채팅방 참여 상태를 관리하는 joinState
+    // 메세지 전송시 읽은 상태 값을 관리 하기 위한 state(유저가 채팅방에 들어와 있는지)
+    // joinState, state 두 상태 값을 DB에 저장함
     private fun changeOnlineState(state: Boolean) {
-        if (finishCheck) {
-            db.getReference("ChattingRoom")
-                .child(chatRoomKey).child("users")
-                .child(uid).setValue(ChattingState(joinState, state))
-        }
+        db.getReference("ChattingRoom")
+            .child(chatRoomKey).child("users")
+            .child(uid).setValue(ChattingState(joinState, state))
     }
 
     // 채팅방이 유효한지(참여한 유저가 존재하는지) 확인하는 메소드

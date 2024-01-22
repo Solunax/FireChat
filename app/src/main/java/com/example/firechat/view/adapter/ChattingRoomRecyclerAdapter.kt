@@ -132,7 +132,7 @@ class ChattingRoomRecyclerAdapter(
                 AlertDialog.Builder(context)
                     .setTitle("메세지 삭제")
                     .setMessage("해당 메세지를 삭제하시겠습니까?")
-                    .setPositiveButton("네") { dialog, _ ->
+                    .setPositiveButton("네") { _, _ ->
                         db.getReference("ChattingRoom").child(chattingRoomKey)
                             .child("messages").child(messageKeys[position]).removeValue()
                     }

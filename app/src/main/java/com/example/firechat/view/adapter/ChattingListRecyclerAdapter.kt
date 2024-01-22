@@ -48,6 +48,7 @@ class ChattingListRecyclerAdapter :
             .addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     chattingRooms.clear()
+                    chattingRoomKeys.clear()
 
                     for (data in snapshot.children) {
                         chattingRooms.add(data.getValue<ChattingRoom>()!!)
