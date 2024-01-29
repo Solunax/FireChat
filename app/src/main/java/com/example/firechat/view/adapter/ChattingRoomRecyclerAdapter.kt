@@ -13,10 +13,10 @@ import com.example.firechat.databinding.MessageOpponentItemBinding
 import com.example.firechat.model.data.ChattingRoomTimeData
 import com.example.firechat.model.data.CurrentUserData
 import com.example.firechat.view.activity.ChattingRoomActivity
+import com.google.firebase.database.ChildEventListener
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.getValue
 import java.lang.StringBuilder
 
@@ -34,28 +34,49 @@ class ChattingRoomRecyclerAdapter(
     }
 
     // 인스턴스 생성시 수행되는 메소드로
-    // 현재 채팅방에 저장된 메세지들을 가져오는 메소드임
+    // 현재 채팅방에 저장된 메세지들을 가져오는 메소드
+    // 기존 ValueEventListener에서 ChildEventListener로 변경
+    // 기존 코드에선 DB에 이벤트가 발생할 때 마다 모든 값을 새로 가져왔지만,
+    // ChildEventListener는 모든 값이 아닌 [추가, 변경, 삭제, 이동]된 값만 가져오기 때문에 더 효율적이라 판단함
     private fun setMessage() {
-        getMessage()
-    }
-
-    // 채팅방의 고유 Key값에 맞는 채팅방에서 메세지들을 가져오는 메소드
-    // 가져온 메세지는 message, messageKey 배열에 저장된다
-    private fun getMessage() {
         db.getReference("ChattingRoom")
             .child(chattingRoomKey).child("messages")
-            .addValueEventListener(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    allMessage.clear()
-                    messageKeys.clear()
-
-                    for (data in snapshot.children) {
-                        allMessage.add(data.getValue<Message>()!!)
-                        messageKeys.add(data.key!!)
-                    }
+            .addChildEventListener(object : ChildEventListener {
+                // 채팅방에 입장시 최초 1회는 모든 값을 가져와 messageKey, allMessage 배열을 채우고
+                // 최초 설정 이후 새로 추가된 값만 가져옴
+                override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
+                    messageKeys.add(snapshot.key!!)
+                    allMessage.add(snapshot.getValue<Message>()!!)
 
                     notifyDataSetChanged()
+                    // 사용자가 가장 최근에 온 메세지를 확인할 수 있게 스크롤
                     recyclerView.scrollToPosition(allMessage.size - 1)
+                }
+
+                // 메세지 읽음 상태 변경시 호출됨
+                // 최초에 읽지 않은 상태에서 읽음 상태로 변경됐을 경우 호출
+                // 이 때 사용자의 메세지 ArrayList에 저장된 값은 읽지 않은 상태의 메세지
+                // 올바른 메세지를 변경하기 위해서 수정된 snapshot의 key와 일치하는 key ArrayList의 인덱스를 찾음
+                // 그 후 해당 인덱스 번호의 메세지 정보의 confirmed 값을 수정
+                override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
+                    val index = messageKeys.indexOf(snapshot.key)
+                    allMessage[index].confirmed = true
+
+                    notifyDataSetChanged()
+                }
+
+                // 유저가 메세지를 삭제할 때 호출됨
+                // 가져온 Key, Messsage를 바탕으로 기존 배열에 존재하던 Key, Message 인스턴스를 삭제
+                override fun onChildRemoved(snapshot: DataSnapshot) {
+                    allMessage.remove(snapshot.getValue<Message>()!!)
+                    messageKeys.remove(snapshot.key)
+
+                    notifyDataSetChanged()
+                    // 사용자가 가장 최근에 온 메세지를 확인할 수 있게 스크롤
+                    recyclerView.scrollToPosition(allMessage.size - 1)
+                }
+
+                override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {
                 }
 
                 override fun onCancelled(error: DatabaseError) {

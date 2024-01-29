@@ -187,7 +187,7 @@ class ChattingListRecyclerAdapter :
 
                     for (data in snapshot.children) {
                         val stateData = data.getValue<ChattingState>()
-                        if (!stateData!!.onlineState) {
+                        if (!stateData!!.joinState) {
                             check++
                         }
                         total++
