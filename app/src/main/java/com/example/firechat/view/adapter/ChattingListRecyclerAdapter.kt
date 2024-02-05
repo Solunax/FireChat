@@ -19,6 +19,7 @@ import com.example.firechat.model.data.CurrentUserData
 import com.example.firechat.model.data.Message
 import com.example.firechat.model.data.User
 import com.example.firechat.view.activity.ChattingRoomActivity
+import com.google.firebase.database.ChildEventListener
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
@@ -45,17 +46,26 @@ class ChattingListRecyclerAdapter :
     private fun setChattingRooms() {
         db.getReference("ChattingRoom")
             .orderByChild("users/${CurrentUserData.uid}/joinState").equalTo(true)
-            .addValueEventListener(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    chattingRooms.clear()
-                    chattingRoomKeys.clear()
-
-                    for (data in snapshot.children) {
-                        chattingRooms.add(data.getValue<ChattingRoom>()!!)
-                        chattingRoomKeys.add(data.key!!)
-                    }
+            .addChildEventListener(object : ChildEventListener {
+                override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
+                    chattingRoomKeys.add(snapshot.key!!)
+                    chattingRooms.add(snapshot.getValue<ChattingRoom>()!!)
 
                     notifyDataSetChanged()
+                }
+
+                override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
+                    val data = snapshot.getValue<ChattingRoom>()!!
+                    val index = chattingRoomKeys.indexOf(snapshot.key)
+                    chattingRooms[index] = data
+
+                    notifyDataSetChanged()
+                }
+
+                override fun onChildRemoved(snapshot: DataSnapshot) {
+                }
+
+                override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {
                 }
 
                 override fun onCancelled(error: DatabaseError) {
@@ -77,6 +87,7 @@ class ChattingListRecyclerAdapter :
         val pos = holder.adapterPosition
         val userKeys = chattingRooms[pos].users!!.keys
         val opponentKey = userKeys.first { it != CurrentUserData.uid }
+        var initializeCheck = false
         lateinit var opponentUser: User
 
         // 현재 채팅방 정보중 상대방의 UID를 바탕으로 이름 정보를 가져옴
@@ -89,6 +100,7 @@ class ChattingListRecyclerAdapter :
                         opponentUser = data.getValue<User>()!!
                         holder.opponentUserName.text = opponentUser.name
                     }
+                    initializeCheck = true
 
                     // 현재 채팅방의 메세지가 하나 이상 있으면
                     // 마지막 메세지 내용과 전송된 시간 그리고 읽지 않은 메세지의 갯수를
@@ -120,12 +132,14 @@ class ChattingListRecyclerAdapter :
         // 그후 Home Activity는 종료함
         holder.chattingRoomBackground.setOnClickListener {
             val intent = Intent(context, ChattingRoomActivity::class.java)
-            intent.putExtra("chatRoom", chattingRooms[position])
-            intent.putExtra("opponent", opponentUser)
-            intent.putExtra("chatRoomKey", chattingRoomKeys[position])
+            if (initializeCheck) {
+                intent.putExtra("chatRoom", chattingRooms[position])
+                intent.putExtra("opponent", opponentUser)
+                intent.putExtra("chatRoomKey", chattingRoomKeys[position])
 
-            context.startActivity(intent)
-            (context as AppCompatActivity).finish()
+                context.startActivity(intent)
+                (context as AppCompatActivity).finish()
+            }
         }
 
         holder.chattingRoomBackground.setOnLongClickListener {
@@ -138,6 +152,9 @@ class ChattingListRecyclerAdapter :
                         .child("joinState").setValue(false)
 
                     chattingRoomAvailableCheck(chattingRoomKeys[position])
+                    chattingRoomKeys.removeAt(position)
+                    chattingRooms.removeAt(position)
+                    notifyDataSetChanged()
                 }
                 .setNegativeButton("취소") { dialog, _ ->
                     dialog.dismiss()
@@ -192,7 +209,6 @@ class ChattingListRecyclerAdapter :
                         }
                         total++
                     }
-
                     // total 값은 채팅방에 존재하는 유저의 수
                     // check 값은 채팅방에서 나간 유저의 수
                     // 총 유저의 수와 나간 유저의 수가 같으면 DB에서 채팅방을 삭제함
