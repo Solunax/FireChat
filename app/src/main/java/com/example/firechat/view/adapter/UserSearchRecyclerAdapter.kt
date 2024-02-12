@@ -23,7 +23,6 @@ class UserSearchRecyclerAdapter :
     RecyclerView.Adapter<UserSearchRecyclerAdapter.ViewHolder>() {
     private var userList = ArrayList<User>()
     private var allUserList = ArrayList<User>()
-    private lateinit var currentUser: User
     private val db = FirebaseDatabase.getInstance()
     private lateinit var context: Context
 
@@ -38,19 +37,21 @@ class UserSearchRecyclerAdapter :
         db.getReference("User")
             .addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
+                    allUserList.clear()
                     userList.clear()
+
                     for (data in snapshot.children) {
                         val item = data.getValue<User>()
 
                         if (item?.uid.equals(CurrentUserData.uid)) {
-                            currentUser = item!!
                             continue
                         }
 
                         allUserList.add(item!!)
-                        userList = allUserList.clone() as ArrayList<User>
-                        notifyDataSetChanged()
                     }
+
+                    userList.addAll(allUserList)
+                    notifyDataSetChanged()
                 }
 
                 override fun onCancelled(error: DatabaseError) {
@@ -63,14 +64,12 @@ class UserSearchRecyclerAdapter :
     // 사용자가 글자 입력 시, 사용자 정보 배열에서 해당 글자가 포함돼 있는지 확인 후
     // 해당 글자가 포함된 경우로 필터링하여 결과를 표시함
     fun searchName(name: String) {
+        userList.clear()
         if (name == "") {
-            userList = allUserList.clone() as ArrayList<User>
+            userList.addAll(allUserList)
         } else {
-            userList.clear()
             val matchList = allUserList.filter { it.name!!.contains(name) }
-            matchList.forEach {
-                userList.add(it)
-            }
+            userList.addAll(matchList)
         }
         notifyDataSetChanged()
     }
@@ -104,7 +103,7 @@ class UserSearchRecyclerAdapter :
         val opponent = userList[position]
         val chatRoom = ChattingRoom(
             mapOf(
-                Pair(currentUser.uid!!, ChattingState(joinState = true, onlineState = true)),
+                Pair(CurrentUserData.uid!!, ChattingState(joinState = true, onlineState = true)),
                 Pair(opponent.uid!!, ChattingState(joinState = true, onlineState = false))
             ), null
         )

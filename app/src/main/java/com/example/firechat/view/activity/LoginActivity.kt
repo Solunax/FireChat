@@ -87,8 +87,9 @@ class LoginActivity : AppCompatActivity() {
         val email = inputEmail.text.toString().trim()
         val pw = inputPw.text.toString().trim()
 
-        if (infoValidationCheck(email, pw))
+        if (infoValidationCheck(email, pw)) {
             viewModel.tryLogin(email, pw)
+        }
     }
 
     // 로그인 성공시 화면 이동 메소드
