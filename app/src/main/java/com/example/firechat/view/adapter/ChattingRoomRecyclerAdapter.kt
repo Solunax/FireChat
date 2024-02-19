@@ -48,7 +48,8 @@ class ChattingRoomRecyclerAdapter(
                     messageKeys.add(snapshot.key!!)
                     allMessage.add(snapshot.getValue<Message>()!!)
 
-                    notifyDataSetChanged()
+                    notifyItemInserted(allMessage.lastIndex)
+
                     // 사용자가 가장 최근에 온 메세지를 확인할 수 있게 스크롤
                     recyclerView.scrollToPosition(allMessage.size - 1)
                 }
@@ -62,16 +63,18 @@ class ChattingRoomRecyclerAdapter(
                     val index = messageKeys.indexOf(snapshot.key)
                     allMessage[index].confirmed = true
 
-                    notifyDataSetChanged()
+                    notifyItemChanged(index)
                 }
 
                 // 유저가 메세지를 삭제할 때 호출됨
                 // 가져온 Key, Messsage를 바탕으로 기존 배열에 존재하던 Key, Message 인스턴스를 삭제
                 override fun onChildRemoved(snapshot: DataSnapshot) {
-                    allMessage.remove(snapshot.getValue<Message>()!!)
+                    val data = snapshot.getValue<Message>()!!
+                    val index = allMessage.indexOf(data)
+                    allMessage.remove(data)
                     messageKeys.remove(snapshot.key)
 
-                    notifyDataSetChanged()
+                    notifyItemRemoved(index)
                     // 사용자가 가장 최근에 온 메세지를 확인할 수 있게 스크롤
                     recyclerView.scrollToPosition(allMessage.size - 1)
                 }

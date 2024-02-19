@@ -51,7 +51,7 @@ class ChattingListRecyclerAdapter :
                     chattingRoomKeys.add(snapshot.key!!)
                     chattingRooms.add(snapshot.getValue<ChattingRoom>()!!)
 
-                    notifyDataSetChanged()
+                    notifyItemInserted(chattingRooms.lastIndex)
                 }
 
                 override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
@@ -59,7 +59,7 @@ class ChattingListRecyclerAdapter :
                     val index = chattingRoomKeys.indexOf(snapshot.key)
                     chattingRooms[index] = data
 
-                    notifyDataSetChanged()
+                    notifyItemChanged(index)
                 }
 
                 override fun onChildRemoved(snapshot: DataSnapshot) {
@@ -154,7 +154,7 @@ class ChattingListRecyclerAdapter :
                     chattingRoomAvailableCheck(chattingRoomKeys[position])
                     chattingRoomKeys.removeAt(position)
                     chattingRooms.removeAt(position)
-                    notifyDataSetChanged()
+                    notifyItemRemoved(position)
                 }
                 .setNegativeButton("취소") { dialog, _ ->
                     dialog.dismiss()
@@ -236,6 +236,7 @@ class ChattingListRecyclerAdapter :
             diffValue < 60000 -> {
                 "방금 전"
             }
+
             diffValue < 3600000 -> {
                 TimeUnit.MILLISECONDS.toMinutes(diffValue).toString() + "분 전"
             }
@@ -247,12 +248,15 @@ class ChattingListRecyclerAdapter :
             diffValue < 604800000 -> {
                 TimeUnit.MILLISECONDS.toDays(diffValue).toString() + "일 전"
             }
+
             diffValue < 2419200000 -> {
                 TimeUnit.MILLISECONDS.toDays(diffValue / 7).toString() + "주 전"
             }
+
             diffValue < 31556952000 -> {
                 TimeUnit.MILLISECONDS.toDays(diffValue / 30).toString() + "개월 전"
             }
+
             else -> {
                 TimeUnit.MILLISECONDS.toDays(diffValue / 365).toString() + "년 전"
             }
