@@ -47,6 +47,8 @@ class ChattingListRecyclerAdapter :
         db.getReference("ChattingRoom")
             .orderByChild("users/${CurrentUserData.uid}/joinState").equalTo(true)
             .addChildEventListener(object : ChildEventListener {
+                // Adapter 생성시 채팅방의 정보를 가져와 ArrayList에 저장
+                // 최초 설정 이후 새로 추가된 정보만 가져옴
                 override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
                     chattingRoomKeys.add(snapshot.key!!)
                     chattingRooms.add(snapshot.getValue<ChattingRoom>()!!)
@@ -54,6 +56,8 @@ class ChattingListRecyclerAdapter :
                     notifyItemInserted(chattingRooms.lastIndex)
                 }
 
+                // 채팅방 정보가 갱신되었을 경우 호출함
+                // snapshot의 Key를 바탕으로 기존 배열에 저장된 정보를 새로 받은 정보로 갱신함
                 override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
                     val data = snapshot.getValue<ChattingRoom>()!!
                     val index = chattingRoomKeys.indexOf(snapshot.key)
@@ -84,8 +88,9 @@ class ChattingListRecyclerAdapter :
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val pos = holder.adapterPosition
-        val userKeys = chattingRooms[pos].users!!.keys
+        val chattingRoomKey = chattingRoomKeys[position]
+        val chattingRoomData = chattingRooms[position]
+        val userKeys = chattingRooms[position].users!!.keys
         val opponentKey = userKeys.first { it != CurrentUserData.uid }
         var initializeCheck = false
         lateinit var opponentUser: User
@@ -94,38 +99,38 @@ class ChattingListRecyclerAdapter :
         db.getReference("User").orderByChild("uid")
             .equalTo(opponentKey)
             .addListenerForSingleValueEvent(object : ValueEventListener {
-                @RequiresApi(Build.VERSION_CODES.O)
                 override fun onDataChange(snapshot: DataSnapshot) {
                     for (data in snapshot.children) {
                         opponentUser = data.getValue<User>()!!
                         holder.opponentUserName.text = opponentUser.name
                     }
                     initializeCheck = true
-
-                    // 현재 채팅방의 메세지가 하나 이상 있으면
-                    // 마지막 메세지 내용과 전송된 시간 그리고 읽지 않은 메세지의 갯수를
-                    // 채팅방 Item에 표시함
-                    if (chattingRooms[pos].messages!!.isNotEmpty()) {
-                        val lastMessage = getLastMessage(chattingRooms[pos])
-                        holder.lastChat.text = lastMessage.content
-                        holder.lastSendTime.text =
-                            getLastMessageTimeString(lastMessage.sendingDate)
-                        val unReadCount = getUnreadCount(CurrentUserData.uid!!, chattingRooms[pos])
-
-                        // 읽지 않은 메세지가 없으면 view의 카운트를 안보이게 설정함
-                        // 읽지 않은 메세지가 있다면 view의 카운트를 보이게 하고, 안읽은 메세지의 갯수로 변경
-                        if (unReadCount > 0) {
-                            holder.unreadCount.visibility = View.VISIBLE
-                            holder.unreadCount.text = unReadCount.toString()
-                        } else {
-                            holder.unreadCount.visibility = View.INVISIBLE
-                        }
-                    }
                 }
 
                 override fun onCancelled(error: DatabaseError) {
                 }
             })
+
+        // 현재 채팅방의 메세지가 하나 이상 있으면
+        // 마지막 메세지 내용과 전송된 시간 그리고 읽지 않은 메세지의 갯수를
+        // 채팅방 Item에 표시함
+        @RequiresApi(Build.VERSION_CODES.O)
+        if (chattingRoomData.messages!!.isNotEmpty()) {
+            val lastMessage = getLastMessage(chattingRoomData)
+            holder.lastChat.text = lastMessage.content
+            holder.lastSendTime.text =
+                getLastMessageTimeString(lastMessage.sendingDate)
+            val unReadCount = getUnreadCount(CurrentUserData.uid!!, chattingRoomData)
+
+            // 읽지 않은 메세지가 없으면 view의 카운트를 안보이게 설정함
+            // 읽지 않은 메세지가 있다면 view의 카운트를 보이게 하고, 안읽은 메세지의 갯수로 변경
+            if (unReadCount > 0) {
+                holder.unreadCount.visibility = View.VISIBLE
+                holder.unreadCount.text = unReadCount.toString()
+            } else {
+                holder.unreadCount.visibility = View.INVISIBLE
+            }
+        }
 
         // 사용자가 채팅방을 클릭시 사용되는 리스너
         // 채팅방의 정보를 담은 Intent로 채팅방 Activity를 시작함
@@ -133,9 +138,9 @@ class ChattingListRecyclerAdapter :
         holder.chattingRoomBackground.setOnClickListener {
             val intent = Intent(context, ChattingRoomActivity::class.java)
             if (initializeCheck) {
-                intent.putExtra("chatRoom", chattingRooms[position])
+                intent.putExtra("chatRoom", chattingRoomData)
                 intent.putExtra("opponent", opponentUser)
-                intent.putExtra("chatRoomKey", chattingRoomKeys[position])
+                intent.putExtra("chatRoomKey", chattingRoomKey)
 
                 context.startActivity(intent)
                 (context as AppCompatActivity).finish()
@@ -143,18 +148,19 @@ class ChattingListRecyclerAdapter :
         }
 
         holder.chattingRoomBackground.setOnLongClickListener {
+            val pos = holder.adapterPosition
             AlertDialog.Builder(context)
                 .setTitle("채팅방 나가기")
                 .setMessage("채팅방에서 나가시겠습니까?")
                 .setPositiveButton("확인") { _, _ ->
-                    db.getReference("ChattingRoom").child(chattingRoomKeys[position])
+                    db.getReference("ChattingRoom").child(chattingRoomKey)
                         .child("users").child("${CurrentUserData.uid}")
                         .child("joinState").setValue(false)
+                    chattingRoomAvailableCheck(chattingRoomKey)
 
-                    chattingRoomAvailableCheck(chattingRoomKeys[position])
-                    chattingRoomKeys.removeAt(position)
-                    chattingRooms.removeAt(position)
-                    notifyItemRemoved(position)
+                    chattingRoomKeys.removeAt(pos)
+                    chattingRooms.removeAt(pos)
+                    notifyItemRemoved(pos)
                 }
                 .setNegativeButton("취소") { dialog, _ ->
                     dialog.dismiss()
@@ -183,7 +189,7 @@ class ChattingListRecyclerAdapter :
 
     // 해당 채팅방에서 마지막으로 전송된 메세지를 확인하여 반환하는 메소드
     private fun getLastMessage(chattingRoomData: ChattingRoom): Message {
-        return chattingRoomData.messages!!.values.sortedBy { it.sendingDate }.last()
+        return chattingRoomData.messages!!.values.maxByOrNull { it.sendingDate }!!
     }
 
     // 현재 사용자가 해당 채팅방에서 읽지 않은 메세지의 갯수를 확인하여 반환하는 메소드

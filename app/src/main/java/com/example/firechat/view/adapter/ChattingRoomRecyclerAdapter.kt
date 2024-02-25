@@ -44,6 +44,7 @@ class ChattingRoomRecyclerAdapter(
             .addChildEventListener(object : ChildEventListener {
                 // 채팅방에 입장시 최초 1회는 모든 값을 가져와 messageKey, allMessage 배열을 채우고
                 // 최초 설정 이후 새로 추가된 값만 가져옴
+                // 새로운 값이 추가되었을 때 RecyclerView를 다시 만드는게(notifyDataSetChanged) 아닌 새로 추가된 값만 추가함
                 override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
                     messageKeys.add(snapshot.key!!)
                     allMessage.add(snapshot.getValue<Message>()!!)
@@ -56,9 +57,8 @@ class ChattingRoomRecyclerAdapter(
 
                 // 메세지 읽음 상태 변경시 호출됨
                 // 최초에 읽지 않은 상태에서 읽음 상태로 변경됐을 경우 호출
-                // 이 때 사용자의 메세지 ArrayList에 저장된 값은 읽지 않은 상태의 메세지
-                // 올바른 메세지를 변경하기 위해서 수정된 snapshot의 key와 일치하는 key ArrayList의 인덱스를 찾음
-                // 그 후 해당 인덱스 번호의 메세지 정보의 confirmed 값을 수정
+                // snapshot으로 가져온 Message Key값으로
+                // 해당 인덱스 번호의 메세지 정보의 confirmed 값을 수정
                 override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
                     val index = messageKeys.indexOf(snapshot.key)
                     allMessage[index].confirmed = true
