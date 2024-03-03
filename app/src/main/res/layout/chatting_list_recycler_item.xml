@@ -48,6 +48,7 @@
                 android:textSize="20sp"
                 android:maxLines="1"
                 android:ellipsize="end"
+                android:text="채팅 내역이 없습니다."
                 android:layout_weight="5"/>
 
             <TextView

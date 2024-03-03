@@ -18,7 +18,6 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.firechat.databinding.ChattingRoomActivityBinding
-import com.example.firechat.model.data.ChattingRoom
 import com.example.firechat.model.data.ChattingState
 import com.example.firechat.model.data.CurrentUserData
 import com.example.firechat.model.data.Message
@@ -43,7 +42,6 @@ class ChattingRoomActivity : AppCompatActivity() {
     private lateinit var opponentName: TextView
 
     private lateinit var uid: String
-    private lateinit var chatRoom: ChattingRoom
     private lateinit var opponentUser: User
     private lateinit var chatRoomKey: String
     private lateinit var inputMethodManager: InputMethodManager
@@ -112,11 +110,6 @@ class ChattingRoomActivity : AppCompatActivity() {
     // 소프트키보드가 열린 상태로 다른곳을 터치하면 소프트 키보드를 닫는 기능을 위해 InputMethodManager 사용
     private fun initProperty() {
         uid = CurrentUserData.uid!!
-        chatRoom = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            intent.getSerializableExtra("chatRoom", ChattingRoom::class.java)!!
-        } else {
-            intent.getSerializableExtra("chatRoom") as ChattingRoom
-        }
         chatRoomKey = intent.getStringExtra("chatRoomKey")!!
         opponentUser = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             intent.getSerializableExtra("opponent", User::class.java)!!

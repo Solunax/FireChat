@@ -138,7 +138,6 @@ class ChattingListRecyclerAdapter :
         holder.chattingRoomBackground.setOnClickListener {
             val intent = Intent(context, ChattingRoomActivity::class.java)
             if (initializeCheck) {
-                intent.putExtra("chatRoom", chattingRoomData)
                 intent.putExtra("opponent", opponentUser)
                 intent.putExtra("chatRoomKey", chattingRoomKey)
 

@@ -123,11 +123,11 @@ class UserSearchRecyclerAdapter :
                     }
 
                     if (validationCheck) {
-                        moveToChattingRoom(chatRoom, opponent)
+                        moveToChattingRoom(opponent)
                     } else {
                         db.getReference("ChattingRoom").push()
                             .setValue(chatRoom).addOnSuccessListener {
-                                moveToChattingRoom(chatRoom, opponent)
+                                moveToChattingRoom(opponent)
                             }
                     }
                 }
@@ -139,9 +139,8 @@ class UserSearchRecyclerAdapter :
 
     // 채팅방 Activity를 시작하는 메소드
     // 채팅방 구성에 필요한 정보들을 담은 Intent로 Activity를 시작함
-    fun moveToChattingRoom(chattingRoom: ChattingRoom, opponent: User) {
+    fun moveToChattingRoom(opponent: User) {
         val intent = Intent(context, ChattingRoomActivity::class.java)
-        intent.putExtra("chatRoom", chattingRoom)
         intent.putExtra("opponent", opponent)
         intent.putExtra("chatRoomKey", "")
 
