@@ -4,8 +4,10 @@ import android.content.Intent
 import android.content.SharedPreferences
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.widget.Button
+import android.view.View
 import android.widget.EditText
+import android.widget.ProgressBar
+import android.widget.RelativeLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
@@ -17,7 +19,9 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var binding: LoginActivityBinding
     private lateinit var inputEmail: EditText
     private lateinit var inputPw: EditText
-    private lateinit var loginButton: Button
+    private lateinit var progressBar: ProgressBar
+    private lateinit var buttonBackground: RelativeLayout
+    private lateinit var statusText: TextView
     private lateinit var register: TextView
     private lateinit var sharePreference: SharedPreferences
     private val viewModel: AuthViewModel by viewModels()
@@ -41,20 +45,32 @@ class LoginActivity : AppCompatActivity() {
         // 아래의 observer는 해당 Event를 관측하고 그 내용에 따라 분기함
         // success면 홈화면으로, 그 외에는 오류 메세지를 사용자에게 표시
         viewModel.event.observe(this) { event ->
+            progressBar.visibility = View.INVISIBLE
+
             event.getContentIfNotHandled()?.let { code ->
                 when (code) {
-                    "login success" -> updateUI()
-                    "login id/pw mismatch" -> Toast.makeText(
-                        this,
-                        "아이디 혹은 비밀번호가 일치하지 않습니다.",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    "login success" -> {
+                        statusText.text = "로그인 성공"
+                        updateUI()
+                    }
 
-                    "login network error" -> Toast.makeText(
-                        this,
-                        "네트워크 상태를 확인해 주세요",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    "login id/pw mismatch" -> {
+                        statusText.text = "로그인"
+                        Toast.makeText(
+                            this,
+                            "아이디 혹은 비밀번호가 일치하지 않습니다.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+
+                    "login network error" -> {
+                        statusText.text = "로그인"
+                        Toast.makeText(
+                            this,
+                            "네트워크 상태를 확인해 주세요",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
                 }
             }
         }
@@ -63,7 +79,12 @@ class LoginActivity : AppCompatActivity() {
     private fun initView() {
         inputEmail = binding.email
         inputPw = binding.pw
-        loginButton = binding.buttonLogin
+
+        val progressBarButtonBinding = binding.buttonLogin
+        progressBar = progressBarButtonBinding.progressBar
+        statusText = progressBarButtonBinding.statusMessage
+        statusText.text = "로그인"
+        buttonBackground = progressBarButtonBinding.progressBackground
         register = binding.textRegister
 
         inputEmail.setText(sharePreference.getString("email", ""))
@@ -71,7 +92,7 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun initListener() {
-        loginButton.setOnClickListener {
+        buttonBackground.setOnClickListener {
             attemptLogin()
         }
 
@@ -88,6 +109,8 @@ class LoginActivity : AppCompatActivity() {
         val pw = inputPw.text.toString().trim()
 
         if (infoValidationCheck(email, pw)) {
+            statusText.text = "로그인 중..."
+            progressBar.visibility = View.VISIBLE
             viewModel.tryLogin(email, pw)
         }
     }

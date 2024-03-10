@@ -1,9 +1,11 @@
 package com.example.firechat.view.activity
 
 import android.os.Bundle
-import android.util.Log
-import android.widget.Button
+import android.view.View
 import android.widget.EditText
+import android.widget.ProgressBar
+import android.widget.RelativeLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -15,7 +17,9 @@ class RegisterActivity : AppCompatActivity() {
     private lateinit var inputName: EditText
     private lateinit var inputEmail: EditText
     private lateinit var inputPw: EditText
-    private lateinit var registerButton: Button
+    private lateinit var progressBar: ProgressBar
+    private lateinit var buttonBackground: RelativeLayout
+    private lateinit var statusText: TextView
     private val viewModel: AuthViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,37 +37,50 @@ class RegisterActivity : AppCompatActivity() {
         // ViewModel에서 회원가입 시도시 결과에 따라 Event를 발생시킴
         // 해당 observer는 ViewModel에서 발생한 Event 내용에 따라서 분기함
         viewModel.event.observe(this) { event ->
+            progressBar.visibility = View.INVISIBLE
             event.getContentIfNotHandled()?.let { code ->
                 when (code) {
                     "register success" -> {
-                        Log.d("activity", "Y")
+                        statusText.text = "회원가입 성공"
                         Toast.makeText(this, "회원가입에 성공했습니다.", Toast.LENGTH_SHORT).show()
                         finish()
                     }
 
-                    "register weak password" -> Toast.makeText(
-                        this,
-                        "비밀번호 강도가 너무 약합니다.",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    "register weak password" -> {
+                        statusText.text = "회원가입"
+                        Toast.makeText(
+                            this,
+                            "비밀번호 강도가 너무 약합니다.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
 
-                    "register email already use" -> Toast.makeText(
-                        this,
-                        "이미 사용중인 이메일 주소입니다.",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    "register email already use" -> {
+                        statusText.text = "회원가입"
+                        Toast.makeText(
+                            this,
+                            "이미 사용중인 이메일 주소입니다.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
 
-                    "register invalid email" -> Toast.makeText(
-                        this,
-                        "이메일 주소 형식에 맞지 않습니다.",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    "register invalid email" -> {
+                        statusText.text = "회원가입"
+                        Toast.makeText(
+                            this,
+                            "이메일 주소 형식에 맞지 않습니다.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
 
-                    "register network error" -> Toast.makeText(
-                        this,
-                        "비밀번호 강도가 너무 약합니다.",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    "register network error" -> {
+                        statusText.text = "회원가입"
+                        Toast.makeText(
+                            this,
+                            "비밀번호 강도가 너무 약합니다.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
                 }
             }
         }
@@ -74,11 +91,17 @@ class RegisterActivity : AppCompatActivity() {
         inputName = binding.name
         inputEmail = binding.email
         inputPw = binding.pw
-        registerButton = binding.buttonRegister
+
+        val progressButtonBinding = binding.buttonRegister
+        progressBar = progressButtonBinding.progressBar
+        statusText = progressButtonBinding.statusMessage
+        statusText.text = "회원가입"
+        buttonBackground = progressButtonBinding.progressBackground
+
     }
 
     private fun initListener() {
-        registerButton.setOnClickListener {
+        buttonBackground.setOnClickListener {
             attemptRegister()
         }
     }
@@ -91,6 +114,8 @@ class RegisterActivity : AppCompatActivity() {
 
         // 입력 정보에 이상이 없으면 ViewModel의 회원가입 시도 메소드 호출
         if (infoValidationCheck(name, email, pw)) {
+            statusText.text = "회원가입 중..."
+            progressBar.visibility = View.VISIBLE
             viewModel.attemptRegister(name, email, pw)
         }
     }

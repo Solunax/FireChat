@@ -29,6 +29,8 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         app:layout_constraintVertical_weight="2"
+        android:paddingLeft="60dp"
+        android:paddingRight="60dp"
 
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -37,7 +39,7 @@
 
         <EditText
             android:id="@+id/email"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ems="10"
             android:hint="아이디(이메일)"
@@ -51,7 +53,7 @@
 
         <EditText
             android:id="@+id/pw"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ems="10"
             android:hint="비밀번호"
@@ -63,16 +65,11 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"/>
 
-        <Button
+        <include
             android:id="@+id/button_login"
-            android:layout_width="wrap_content"
+            layout="@layout/progress_bar_button"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:backgroundTint="@color/deep_gray"
-            android:ems="10"
-            android:text="로그인"
-            android:textSize="20sp"
-
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/pw" />

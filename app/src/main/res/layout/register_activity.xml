@@ -30,6 +30,8 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         app:layout_constraintVertical_weight="2"
+        android:paddingStart="60dp"
+        android:paddingEnd="60dp"
 
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -38,7 +40,7 @@
 
         <EditText
             android:id="@+id/name"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ems="10"
             android:inputType="text"
@@ -52,7 +54,7 @@
 
         <EditText
             android:id="@+id/email"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ems="10"
             android:inputType="textEmailAddress"
@@ -67,7 +69,7 @@
 
         <EditText
             android:id="@+id/pw"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ems="10"
             android:inputType="textPassword"
@@ -79,19 +81,16 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/email"/>
 
-        <Button
+        <include
             android:id="@+id/button_register"
-            android:layout_width="wrap_content"
+            layout="@layout/progress_bar_button"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:ems="10"
-            android:textSize="20sp"
-            android:backgroundTint="@color/deep_gray"
             android:layout_marginTop="10dp"
-            android:text="회원가입"
 
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/pw"/>
+            app:layout_constraintTop_toBottomOf="@id/pw" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
