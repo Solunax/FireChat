@@ -15,7 +15,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@+id/user_search">
+        app:layout_constraintBottom_toTopOf="@+id/search_layout">
 
         <ImageButton
             android:id="@+id/new_chat_back"
@@ -44,22 +44,41 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <EditText
-        android:id="@+id/user_search"
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/search_layout"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_margin="15dp"
-        android:background="@android:color/transparent"
-        android:hint="사용자 이름 입력"
-        android:inputType="text"
-        android:textSize="20sp"
+        android:layout_margin="10dp"
+        android:padding="10dp"
+        android:orientation="horizontal"
         app:layout_constraintVertical_weight="1"
+        android:background="@drawable/new_chat_user_search_background"
 
         app:layout_constraintBottom_toTopOf="@+id/user_recycler"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/constraint_top" />
+        app:layout_constraintTop_toBottomOf="@+id/constraint_top" >
+
+        <ImageView
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:src="@drawable/baseline_search_24"
+            android:layout_weight="1"
+            android:layout_marginStart="1dp"
+            android:layout_marginEnd="10dp"/>
+
+        <EditText
+            android:id="@+id/user_search"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:hint="이름을 입력하세요"
+            android:background="@android:color/transparent"
+            android:inputType="text"
+            android:textSize="20sp"
+            android:layout_weight="8"/>
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/user_recycler"
@@ -67,11 +86,12 @@
         android:layout_height="0dp"
         android:layout_margin="10dp"
         app:layout_constraintVertical_weight="8"
+        android:background="@drawable/new_chat_user_search_background"
 
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/user_search" />
+        app:layout_constraintTop_toBottomOf="@+id/search_layout" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

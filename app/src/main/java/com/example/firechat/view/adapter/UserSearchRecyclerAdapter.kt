@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.RecyclerView
 import com.example.firechat.R
@@ -108,7 +109,7 @@ class UserSearchRecyclerAdapter :
             ), null
         )
 
-        db.getReference("ChattingRoom").orderByChild("users/${opponent.uid}/joinState")
+        db.getReference("ChattingRoom").orderByChild("users/${CurrentUserData.uid!!}/joinState")
             .equalTo(true)
             .addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
@@ -123,7 +124,16 @@ class UserSearchRecyclerAdapter :
                     }
 
                     if (validationCheck) {
-                        moveToChattingRoom(opponent)
+                        AlertDialog.Builder(context)
+                            .setTitle("채팅방 생성 알림")
+                            .setMessage("이미 해당 사용자와 대화한 채팅방이 있습니다. 이동하시겠습니까?")
+                            .setPositiveButton("네") { dialog, _ ->
+                                // View Model의 로그아웃 메소드 호출 후 로그인 화면으로 돌아감
+                                moveToChattingRoom(opponent)
+                            }
+                            .setNegativeButton("아니요") { dialog, _ ->
+                                dialog.dismiss()
+                            }.show()
                     } else {
                         db.getReference("ChattingRoom").push()
                             .setValue(chatRoom).addOnSuccessListener {
