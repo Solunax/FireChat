@@ -1,103 +1,114 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/drawer_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/constraint_top"
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/deep_gray"
-        android:layout_alignParentTop="true"
-        android:padding="10dp">
+        android:layout_height="match_parent">
 
-        <ImageButton
-            android:id="@+id/chatting_room_back"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:backgroundTint="@android:color/transparent"
-            app:layout_constraintTop_toTopOf="@+id/chatting_room_opponent_user_name"
-            app:layout_constraintBottom_toBottomOf="@+id/chatting_room_opponent_user_name"
-            app:layout_constraintStart_toStartOf="parent"
-            app:srcCompat="@drawable/chattingroom_icon_back_button" />
-
-        <TextView
-            android:id="@+id/chatting_room_opponent_user_name"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:gravity="center"
-            android:text="홍길동"
-            android:textColor="@color/white"
-            android:textSize="30sp"
-            android:textStyle="bold"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <ImageButton
-            android:id="@+id/chatting_room_quit"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:backgroundTint="@android:color/transparent"
-            app:layout_constraintTop_toTopOf="@id/chatting_room_opponent_user_name"
-            app:layout_constraintBottom_toBottomOf="@id/chatting_room_opponent_user_name"
-            app:layout_constraintEnd_toEndOf="parent"
-            android:src="@drawable/chattingroom_icon_white_quit_button"/>
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/message_recycler"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_above="@id/constraint_bottom"
-        android:layout_below="@id/constraint_top"
-        android:layout_marginLeft="5dp"
-        android:layout_marginRight="5dp" />
-
-    <View
-        android:id="@+id/divider"
-        android:layout_width="match_parent"
-        android:layout_height="2dp"
-        android:background="@color/deep_gray"
-        android:layout_alignTop="@+id/constraint_bottom"/>
-
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/constraint_bottom"
-        android:layout_width="match_parent"
-        android:layout_height="40dp"
-        android:orientation="horizontal"
-        android:layout_alignParentBottom="true"
-        android:layout_margin="5dp">
-
-        <EditText
-            android:id="@+id/message_input"
-            android:layout_width="0dp"
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/constraint_top"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@android:color/transparent"
-            android:hint="메시지 입력"
-            android:inputType="text"
-            android:textSize="20sp"
+            android:background="@color/deep_gray"
+            android:layout_alignParentTop="true"
+            android:padding="10dp">
 
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/send_message"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent" />
+            <ImageButton
+                android:id="@+id/chatting_room_back"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:backgroundTint="@android:color/transparent"
+                app:layout_constraintTop_toTopOf="@+id/chatting_room_opponent_user_name"
+                app:layout_constraintBottom_toBottomOf="@+id/chatting_room_opponent_user_name"
+                app:layout_constraintStart_toStartOf="parent"
+                app:srcCompat="@drawable/chattingroom_icon_back_button" />
 
-        <ImageButton
-            android:id="@+id/send_message"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:backgroundTint="@android:color/transparent"
+            <TextView
+                android:id="@+id/chatting_room_opponent_user_name"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="홍길동"
+                android:textColor="@color/white"
+                android:textSize="30sp"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
-            app:layout_constraintStart_toEndOf="@id/message_input"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/message_input"
-            app:layout_constraintBottom_toBottomOf="@id/message_input"
-            app:srcCompat="@drawable/chattingroom_icon_send_button" />
+            <ImageButton
+                android:id="@+id/chatting_room_drawer"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:backgroundTint="@android:color/transparent"
+                app:layout_constraintTop_toTopOf="@id/chatting_room_opponent_user_name"
+                app:layout_constraintBottom_toBottomOf="@id/chatting_room_opponent_user_name"
+                app:layout_constraintEnd_toEndOf="parent"
+                android:src="@drawable/chatting_room_drawer"/>
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
-</RelativeLayout>
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/message_recycler"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_above="@id/constraint_bottom"
+            android:layout_below="@id/constraint_top"
+            android:layout_marginLeft="5dp"
+            android:layout_marginRight="5dp" />
+
+        <View
+            android:id="@+id/divider"
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:background="@color/deep_gray"
+            android:layout_alignTop="@+id/constraint_bottom"/>
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/constraint_bottom"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:orientation="horizontal"
+            android:layout_alignParentBottom="true"
+            android:layout_margin="5dp">
+
+            <EditText
+                android:id="@+id/message_input"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:background="@android:color/transparent"
+                android:hint="메시지 입력"
+                android:inputType="text"
+                android:textSize="20sp"
+
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/send_message"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent" />
+
+            <ImageButton
+                android:id="@+id/send_message"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:backgroundTint="@android:color/transparent"
+
+                app:layout_constraintStart_toEndOf="@id/message_input"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/message_input"
+                app:layout_constraintBottom_toBottomOf="@id/message_input"
+                app:srcCompat="@drawable/chattingroom_icon_send_button" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </RelativeLayout>
+
+    <include
+        android:id="@+id/chatting_room_inside_drawer"
+        layout = "@layout/chatting_room_navigation" />
+
+</androidx.drawerlayout.widget.DrawerLayout>

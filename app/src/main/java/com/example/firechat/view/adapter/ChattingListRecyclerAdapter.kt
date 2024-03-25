@@ -259,7 +259,12 @@ class ChattingListRecyclerAdapter :
             }
 
             diffValue < 31556952000 -> {
-                TimeUnit.MILLISECONDS.toDays(diffValue / 30).toString() + "개월 전"
+                val days = TimeUnit.MILLISECONDS.toDays(diffValue / 30)
+                if (days == 0L) {
+                    "1 개월 전"
+                } else {
+                    TimeUnit.MILLISECONDS.toDays(diffValue / 30).toString() + "개월 전"
+                }
             }
 
             else -> {

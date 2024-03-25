@@ -1,6 +1,7 @@
 package com.example.firechat.model.repository
 
 import android.util.Log
+import com.example.firechat.model.data.CurrentUserData
 import com.example.firechat.model.data.User
 import com.example.firechat.viewModel.LoginResultCallBack
 import com.example.firechat.viewModel.RegisterResultCallback
@@ -9,7 +10,10 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 
 class AuthRepository {
     private val auth = FirebaseAuth.getInstance()
@@ -21,8 +25,20 @@ class AuthRepository {
             .addOnCompleteListener { task ->
                 // 로그인 시도 성공 여부에 따라 분기
                 if (task.isSuccessful) {
-                    // 로그인 성공시 현재 유저의 uid와 함께 성공 코드를 반환
-                    resultCallBack.onLoginSuccess("login success", auth.currentUser!!.uid)
+                    db.getReference("User")
+                        .child(auth.currentUser!!.uid)
+                        .addListenerForSingleValueEvent(object : ValueEventListener {
+                            override fun onDataChange(snapshot: DataSnapshot) {
+                                // Singleton 객체에 User Name 값 설정
+                                CurrentUserData.userName = snapshot.child("name").value.toString()
+
+                                // 로그인 성공시 현재 유저의 uid와 함께 성공 코드를 반환
+                                resultCallBack.onLoginSuccess("login success", auth.currentUser!!.uid)
+                            }
+
+                            override fun onCancelled(error: DatabaseError) {
+                            }
+                        })
                 } else {
                     // 로그인 실패시 발생한 문제에 따라서 에러 코드를 반환
                     Log.d("Login Debug", "${task.exception?.message}")

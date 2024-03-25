@@ -9,12 +9,15 @@ import android.view.MotionEvent
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.ListView
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.view.GravityCompat
+import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.firechat.databinding.ChattingRoomActivityBinding
@@ -23,6 +26,7 @@ import com.example.firechat.model.data.CurrentUserData
 import com.example.firechat.model.data.Message
 import com.example.firechat.model.data.User
 import com.example.firechat.view.adapter.ChattingRoomRecyclerAdapter
+import com.example.firechat.view.adapter.DrawerUserListViewAdapter
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
@@ -36,10 +40,13 @@ class ChattingRoomActivity : AppCompatActivity() {
     private lateinit var binding: ChattingRoomActivityBinding
     private lateinit var topLayout: ConstraintLayout
     private lateinit var goBackButton: ImageButton
-    private lateinit var quitButton: ImageButton
     private lateinit var sendMessageButton: ImageButton
     private lateinit var messageInput: EditText
     private lateinit var opponentName: TextView
+    private lateinit var drawerButton: ImageButton
+    private lateinit var drawerLayout: DrawerLayout
+    private lateinit var drawerUserListView: ListView
+    private lateinit var quitButton: ImageButton
 
     private lateinit var uid: String
     private lateinit var opponentUser: User
@@ -127,11 +134,25 @@ class ChattingRoomActivity : AppCompatActivity() {
         messageInput = binding.messageInput
         messageRecyclerView = binding.messageRecycler
         sendMessageButton = binding.sendMessage
-        quitButton = binding.chattingRoomQuit
+        drawerButton = binding.chattingRoomDrawer
         opponentName = binding.chattingRoomOpponentUserName
         topLayout = binding.constraintTop
-
         opponentName.text = opponentUser.name
+        drawerLayout = binding.drawerLayout
+
+        val drawer = binding.chattingRoomInsideDrawer
+        drawerUserListView = drawer.chattingRoomDrawerUserList
+        quitButton = drawer.chattingRoomDrawerQuitButton
+        setDrawerUserList()
+    }
+
+    private fun setDrawerUserList() {
+        val userList = ArrayList<String>()
+        userList.add("${CurrentUserData.userName!!} (나)")
+        userList.add(opponentUser.name!!)
+
+        val adapter = DrawerUserListViewAdapter(userList)
+        drawerUserListView.adapter = adapter
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -147,6 +168,10 @@ class ChattingRoomActivity : AppCompatActivity() {
             sendMessage()
         }
 
+        drawerButton.setOnClickListener {
+            drawerLayout.openDrawer(GravityCompat.END)
+        }
+
         // 채팅방 나가기 버튼을 누를시 Alert Dialog 생성
         // 만약 채팅방에서 나간다면 joinState를 false로 변경하고 앱의 홈 액티비티로 전환
         // activity가 종료 되면서 joinState는 DB에 저장됨
@@ -154,12 +179,13 @@ class ChattingRoomActivity : AppCompatActivity() {
             AlertDialog.Builder(this)
                 .setTitle("채팅방 나가기")
                 .setMessage("채팅방에서 나가시겠습니까?")
-                .setPositiveButton("확인") { dialog, _ ->
+                .setPositiveButton("확인") { _, _ ->
                     joinState = false
                     changeOnlineState(false)
 
                     // 이 시점에서 flag를 변경하는 이유는 flag가 true인 상태로 activity 종료시
-                    // back
+                    // 채팅방을 삭제하는 과정에서 onDestroy 콜백에 존재하는 채팅방 상태 변경 코드를
+                    // 실행하지 않기 위함(flag를 변경하지 않으면 삭제된 채팅방에 대한 상태 값(쓰레기 값)을 DB에 저장함)
                     finishCheck = false
                     chattingRoomAvailableCheck(chatRoomKey)
                     backToHomeActivity()
