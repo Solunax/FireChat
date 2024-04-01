@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import android.widget.BaseAdapter
 import com.example.firechat.databinding.ChattingRoomDrawerListItemBinding
 
+// 채팅방 드로어에 사용할 ListViewAdapter
 class DrawerUserListViewAdapter(private val userList: ArrayList<String>) :
     BaseAdapter(){
 
@@ -36,6 +37,7 @@ class DrawerUserListViewAdapter(private val userList: ArrayList<String>) :
     }
 
     private fun bind(binding: ChattingRoomDrawerListItemBinding, data: String) {
+        // 채팅방에 참여중인 유저의 이름값 설정
         binding.listItemUserName.text = data
     }
 }

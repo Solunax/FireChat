@@ -47,7 +47,6 @@ class ChattingRoomActivity : AppCompatActivity() {
     private lateinit var drawerLayout: DrawerLayout
     private lateinit var drawerUserListView: ListView
     private lateinit var quitButton: ImageButton
-
     private lateinit var uid: String
     private lateinit var opponentUser: User
     private lateinit var chatRoomKey: String
@@ -138,14 +137,18 @@ class ChattingRoomActivity : AppCompatActivity() {
         opponentName = binding.chattingRoomOpponentUserName
         topLayout = binding.constraintTop
         opponentName.text = opponentUser.name
-        drawerLayout = binding.drawerLayout
 
+        // 채팅방 드로어에 사용할 View 초기화
+        // 드로어 내의 요소에 접근할 때 ViewBinding을 이용
+        // 나가기 버튼은 드로어 하단에 위치함
+        drawerLayout = binding.drawerLayout
         val drawer = binding.chattingRoomInsideDrawer
         drawerUserListView = drawer.chattingRoomDrawerUserList
         quitButton = drawer.chattingRoomDrawerQuitButton
         setDrawerUserList()
     }
 
+    // 드로어에 현재 채팅방 참여자를 설정하는 함수
     private fun setDrawerUserList() {
         val userList = ArrayList<String>()
         userList.add("${CurrentUserData.userName!!} (나)")
@@ -172,6 +175,7 @@ class ChattingRoomActivity : AppCompatActivity() {
             drawerLayout.openDrawer(GravityCompat.END)
         }
 
+        // 채팅방 나가기 버튼은 드로어에 존재하지만, View를 초기화 할때 드로어의 버튼으로 초기화함
         // 채팅방 나가기 버튼을 누를시 Alert Dialog 생성
         // 만약 채팅방에서 나간다면 joinState를 false로 변경하고 앱의 홈 액티비티로 전환
         // activity가 종료 되면서 joinState는 DB에 저장됨

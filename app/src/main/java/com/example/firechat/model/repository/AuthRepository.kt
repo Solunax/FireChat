@@ -30,6 +30,7 @@ class AuthRepository {
                         .addListenerForSingleValueEvent(object : ValueEventListener {
                             override fun onDataChange(snapshot: DataSnapshot) {
                                 // Singleton 객체에 User Name 값 설정
+                                // 이 Name 변수는 드로어에서 사용됨
                                 CurrentUserData.userName = snapshot.child("name").value.toString()
 
                                 // 로그인 성공시 현재 유저의 uid와 함께 성공 코드를 반환
