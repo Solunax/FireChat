@@ -27,6 +27,7 @@ import com.example.firechat.model.data.Message
 import com.example.firechat.model.data.User
 import com.example.firechat.view.adapter.ChattingRoomRecyclerAdapter
 import com.example.firechat.view.adapter.DrawerUserListViewAdapter
+import com.example.firechat.view.dialog.LoadingDialog
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
@@ -51,6 +52,7 @@ class ChattingRoomActivity : AppCompatActivity() {
     private lateinit var opponentUser: User
     private lateinit var chatRoomKey: String
     private lateinit var inputMethodManager: InputMethodManager
+    private lateinit var loadingDialog: LoadingDialog
     private var opponentUserOnlineState = false
     lateinit var messageRecyclerView: RecyclerView
     private val db = FirebaseDatabase.getInstance()
@@ -62,14 +64,17 @@ class ChattingRoomActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ChattingRoomActivityBinding.inflate(layoutInflater)
+        loadingDialog = LoadingDialog(this)
         setContentView(binding.root)
 
+        loadingDialog.show()
         initProperty()
         initView()
         initListener()
         setChattingRoom()
 
         onBackPressedDispatcher.addCallback(this, backPressedCallback)
+        loadingDialog.dismiss()
     }
 
     // 소프트 키보드가 활성화된 상태에서 다른곳 터치시 소프트 키보드를 비활성화함

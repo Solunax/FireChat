@@ -14,6 +14,7 @@ import com.example.firechat.model.data.ChattingState
 import com.example.firechat.model.data.CurrentUserData
 import com.example.firechat.model.data.User
 import com.example.firechat.view.activity.ChattingRoomActivity
+import com.example.firechat.view.dialog.LoadingDialog
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
@@ -26,6 +27,7 @@ class UserSearchRecyclerAdapter :
     private var allUserList = ArrayList<User>()
     private val db = FirebaseDatabase.getInstance()
     private lateinit var context: Context
+    private lateinit var loadingDialog: LoadingDialog
 
     // 리사이클러 뷰 초기화시 수행되는 메소드
     init {
@@ -80,8 +82,8 @@ class UserSearchRecyclerAdapter :
         viewType: Int
     ): ViewHolder {
         context = parent.context
-        val view =
-            LayoutInflater.from(context)
+        loadingDialog = LoadingDialog(context)
+        val view = LayoutInflater.from(context)
                 .inflate(R.layout.new_chat_user_search_result_item, parent, false)
         return ViewHolder(NewChatUserSearchResultItemBinding.bind(view))
     }
@@ -101,6 +103,7 @@ class UserSearchRecyclerAdapter :
     // 채팅방 구성시 만약 이미 생성된 채팅방이 존재하면
     // 채팅방을 생성하지 않고 기존 채팅방으로 이동함
     private fun createChattingRoom(position: Int) {
+        loadingDialog.show()
         val opponent = userList[position]
         val chatRoom = ChattingRoom(
             mapOf(
@@ -122,12 +125,13 @@ class UserSearchRecyclerAdapter :
                             validationCheck = true
                         }
                     }
+                    loadingDialog.dismiss()
 
                     if (validationCheck) {
                         AlertDialog.Builder(context)
                             .setTitle("채팅방 생성 알림")
                             .setMessage("이미 해당 사용자와 대화한 채팅방이 있습니다. 이동하시겠습니까?")
-                            .setPositiveButton("네") { dialog, _ ->
+                            .setPositiveButton("네") { _, _ ->
                                 // View Model의 로그아웃 메소드 호출 후 로그인 화면으로 돌아감
                                 moveToChattingRoom(opponent)
                             }
