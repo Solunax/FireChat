@@ -103,6 +103,7 @@ class UserSearchRecyclerAdapter :
     // 채팅방 구성시 만약 이미 생성된 채팅방이 존재하면
     // 채팅방을 생성하지 않고 기존 채팅방으로 이동함
     private fun createChattingRoom(position: Int) {
+        // 채팅방 생성에 필요한 데이터를 가져오는 동안 로딩 다이얼로그 표시
         loadingDialog.show()
         val opponent = userList[position]
         val chatRoom = ChattingRoom(
@@ -113,7 +114,6 @@ class UserSearchRecyclerAdapter :
         )
 
         db.getReference("ChattingRoom").orderByChild("users/${CurrentUserData.uid!!}/joinState")
-            .equalTo(true)
             .addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     var validationCheck = false
@@ -125,6 +125,7 @@ class UserSearchRecyclerAdapter :
                             validationCheck = true
                         }
                     }
+                    // 로딩이 완료되면 유효성 여부와 관계없이 로딩 다이얼로그를 제거함
                     loadingDialog.dismiss()
 
                     if (validationCheck) {

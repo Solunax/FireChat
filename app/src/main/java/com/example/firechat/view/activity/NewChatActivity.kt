@@ -1,6 +1,5 @@
 package com.example.firechat.view.activity
 
-import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -41,11 +40,6 @@ class NewChatActivity : AppCompatActivity() {
         backPressedCallback.isEnabled = false
     }
 
-    private fun backToHomeActivity() {
-        startActivity(Intent(this, HomeActivity::class.java))
-        finish()
-    }
-
     // 현재 사용자 정보를 가지고 있는 Singleton 객체에서 uid를 가져옴
     private fun initProperty() {
         uid = CurrentUserData.uid!!
@@ -59,7 +53,7 @@ class NewChatActivity : AppCompatActivity() {
 
     private fun initListener() {
         backButton.setOnClickListener {
-            backToHomeActivity()
+            finish()
         }
 
         // 사용자 검색창에서 입력에 따라 검색 결과를 표현하기 위한 리스너
@@ -90,7 +84,6 @@ class NewChatActivity : AppCompatActivity() {
     // 뒤로가기 버튼 클릭시 홈 화면으로 돌아감
     private val backPressedCallback = object : OnBackPressedCallback(true) {
         override fun handleOnBackPressed() {
-            backToHomeActivity()
             finish()
         }
     }

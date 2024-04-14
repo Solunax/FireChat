@@ -14,7 +14,9 @@ class LoadingDialog(context: Context): Dialog(context){
         binding = LoadingDialogBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // 로딩 다이얼로그를 사용자 임의로 취소할 수 없게 설정함
         setCancelable(false)
+        // 로딩 다이얼로그의 배경을 투명으로 설정
         window!!.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
     }
 }

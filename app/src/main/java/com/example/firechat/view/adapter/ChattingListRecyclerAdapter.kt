@@ -8,7 +8,6 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.RecyclerView
 import com.example.firechat.R
 import com.example.firechat.databinding.ChattingListRecyclerItemBinding
@@ -134,7 +133,6 @@ class ChattingListRecyclerAdapter :
 
         // 사용자가 채팅방을 클릭시 사용되는 리스너
         // 채팅방의 정보를 담은 Intent로 채팅방 Activity를 시작함
-        // 그후 Home Activity는 종료함
         holder.chattingRoomBackground.setOnClickListener {
             val intent = Intent(context, ChattingRoomActivity::class.java)
             if (initializeCheck) {
@@ -142,7 +140,6 @@ class ChattingListRecyclerAdapter :
                 intent.putExtra("chatRoomKey", chattingRoomKey)
 
                 context.startActivity(intent)
-                (context as AppCompatActivity).finish()
             }
         }
 

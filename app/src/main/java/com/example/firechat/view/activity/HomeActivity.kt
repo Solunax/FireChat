@@ -66,10 +66,9 @@ class HomeActivity : AppCompatActivity() {
         }
 
         // 새로운 채팅 생성 버튼
-        // 클릭시 Activity 실행 후 현재 Activity 종료
+        // 클릭시 채팅방 생성 Activity 시작
         newChatButton.setOnClickListener {
             startActivity(Intent(this, NewChatActivity::class.java))
-            finish()
         }
     }
 

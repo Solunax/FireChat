@@ -1,7 +1,6 @@
 package com.example.firechat.view.activity
 
 import android.content.Context
-import android.content.Intent
 import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
@@ -165,10 +164,9 @@ class ChattingRoomActivity : AppCompatActivity() {
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun initListener() {
-        // 뒤로가기 버튼을 누를시 홈 화면 Activity를 실행
-        // 실행 후 현재 Activity 종료
+        // 앱 내의 뒤로가기 버튼을 누를시 현재 Activity 종료
         goBackButton.setOnClickListener {
-            backToHomeActivity()
+            finish()
         }
 
         // 메세지 전송 버튼을 누를시 현재 입력한 메세지를 서버에 저장
@@ -197,7 +195,7 @@ class ChattingRoomActivity : AppCompatActivity() {
                     // 실행하지 않기 위함(flag를 변경하지 않으면 삭제된 채팅방에 대한 상태 값(쓰레기 값)을 DB에 저장함)
                     finishCheck = false
                     chattingRoomAvailableCheck(chatRoomKey)
-                    backToHomeActivity()
+                    finish()
                 }
                 .setNegativeButton("취소") { dialog, _ ->
                     dialog.dismiss()
@@ -309,7 +307,7 @@ class ChattingRoomActivity : AppCompatActivity() {
     // 뒤로가기 버튼 클릭시 backToHomeActivity 메소드 호출
     private val backPressedCallback = object : OnBackPressedCallback(true) {
         override fun handleOnBackPressed() {
-            backToHomeActivity()
+            finish()
         }
     }
 
@@ -350,11 +348,5 @@ class ChattingRoomActivity : AppCompatActivity() {
                 override fun onCancelled(error: DatabaseError) {
                 }
             })
-    }
-
-    // Home Activity로 돌아가는 메소드
-    private fun backToHomeActivity() {
-        startActivity(Intent(this, HomeActivity::class.java))
-        finish()
     }
 }
