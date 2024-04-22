@@ -145,7 +145,7 @@ class ChattingRoomActivity : AppCompatActivity() {
         // 채팅방 드로어에 사용할 View 초기화
         // 드로어 내의 요소에 접근할 때 ViewBinding을 이용
         // 나가기 버튼은 드로어 하단에 위치함
-        drawerLayout = binding.drawerLayout
+        drawerLayout = binding.chattingRoomDrawerLayout
         val drawer = binding.chattingRoomInsideDrawer
         drawerUserListView = drawer.chattingRoomDrawerUserList
         quitButton = drawer.chattingRoomDrawerQuitButton
@@ -174,6 +174,7 @@ class ChattingRoomActivity : AppCompatActivity() {
             sendMessage()
         }
 
+        // 드로어 버튼을 누르면 우측에서(GravityCompat.END) 드로어 메뉴가 등장
         drawerButton.setOnClickListener {
             drawerLayout.openDrawer(GravityCompat.END)
         }
@@ -307,7 +308,12 @@ class ChattingRoomActivity : AppCompatActivity() {
     // 뒤로가기 버튼 클릭시 backToHomeActivity 메소드 호출
     private val backPressedCallback = object : OnBackPressedCallback(true) {
         override fun handleOnBackPressed() {
-            finish()
+            // 만약 드로어가 열려있다면 열려있는 드로어를 닫음
+            if (drawerLayout.isDrawerOpen(GravityCompat.END)) {
+                drawerLayout.closeDrawers()
+            } else {
+                finish()
+            }
         }
     }
 

@@ -226,7 +226,8 @@ class ChattingListRecyclerAdapter :
 
     // 마지막으로 전송된 메세지의 시간을 확인하여 채팅목록에 표시하기 적절한 형태로 문자열을 수정하는 메소드
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun getLastMessageTimeString(lastTimeString: String): String {           //마지막 메세지가 전송된 시각 구하기
+    private fun getLastMessageTimeString(lastTimeString: String): String {
+        //마지막 메세지가 전송된 시각 구하기
         val lastTimeData = ChattingRoomTimeData(lastTimeString)
         val currentTime = Calendar.getInstance().timeInMillis
         val lastTime = Calendar.getInstance().apply { time = lastTimeData.dateTime }.timeInMillis

@@ -4,6 +4,7 @@ package com.example.firechat.model.data
 class CurrentUserData {
     companion object {
         var userName: String? = null
+        var email: String? = null
         var uid: String? = null
     }
 }

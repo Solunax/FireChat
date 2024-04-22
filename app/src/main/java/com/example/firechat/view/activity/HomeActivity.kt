@@ -2,12 +2,14 @@ package com.example.firechat.view.activity
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Button
+import android.widget.ImageButton
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.GravityCompat
+import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -19,8 +21,10 @@ import com.example.firechat.viewModel.AuthViewModel
 
 class HomeActivity : AppCompatActivity() {
     private lateinit var binding: HomeActivityBinding
-    private lateinit var newChatButton: Button
-    private lateinit var logoutButton: Button
+    private lateinit var drawerLayout: DrawerLayout
+    private lateinit var drawerButton: ImageButton
+    private lateinit var newChatButton: ImageButton
+    private lateinit var logoutButton: ImageButton
     private lateinit var chattingRoomRecycler: RecyclerView
     private lateinit var uid: String
     private var lastBackPressedTime = 0L
@@ -55,12 +59,23 @@ class HomeActivity : AppCompatActivity() {
     }
 
     private fun initView() {
-        newChatButton = binding.buttonNewChat
-        logoutButton = binding.buttonLogout
         chattingRoomRecycler = binding.chattingRoomRecycler
+        newChatButton = binding.newChat
+        drawerButton = binding.homeDrawerButton
+        drawerLayout = binding.homeDrawerLayout
+
+        // 채팅방 드로어에 사용할 View 초기화
+        // 드로어 내의 요소에 접근할 때 ViewBinding을 이용
+        // 나가기 버튼은 드로어 하단에 위치함
+        val drawer = binding.homeDrawer
+        logoutButton = drawer.homeDrawerBottomMenuLogout
+
+        drawer.homeDrawerId.text = CurrentUserData.userName
+        drawer.homeDrawerEmail.text = CurrentUserData.email
     }
 
     private fun initListener() {
+        // 드로어 안의 로그아웃 버튼 선택시 로그아웃 함수 실행
         logoutButton.setOnClickListener {
             logout()
         }
@@ -69,6 +84,11 @@ class HomeActivity : AppCompatActivity() {
         // 클릭시 채팅방 생성 Activity 시작
         newChatButton.setOnClickListener {
             startActivity(Intent(this, NewChatActivity::class.java))
+        }
+
+        // 드로어 버튼을 누르면 우측에서(GravityCompat.END) 드로어 메뉴가 등장
+        drawerButton.setOnClickListener {
+            drawerLayout.openDrawer(GravityCompat.END)
         }
     }
 
@@ -103,12 +123,17 @@ class HomeActivity : AppCompatActivity() {
     // 뒤로가기 버튼을 두번 클릭시 앱을 종료하는 기능을 수행하는 콜백
     private val backPressedCallback = object : OnBackPressedCallback(true) {
         override fun handleOnBackPressed() {
-            if (System.currentTimeMillis() > lastBackPressedTime + 2000) {
-                lastBackPressedTime = System.currentTimeMillis()
-                Toast.makeText(this@HomeActivity, "뒤로가기 버튼을 한번 더 누르면 앱이 종료됩니다.", Toast.LENGTH_SHORT)
-                    .show()
+            // 만약 드로어가 열려있다면 열려있는 드로어를 닫음
+            if (drawerLayout.isDrawerOpen(GravityCompat.END)) {
+                drawerLayout.closeDrawers()
             } else {
-                finish()
+                if (System.currentTimeMillis() > lastBackPressedTime + 2000) {
+                    lastBackPressedTime = System.currentTimeMillis()
+                    Toast.makeText(this@HomeActivity, "뒤로가기 버튼을 한번 더 누르면 앱이 종료됩니다.", Toast.LENGTH_SHORT)
+                        .show()
+                } else {
+                    finish()
+                }
             }
         }
     }

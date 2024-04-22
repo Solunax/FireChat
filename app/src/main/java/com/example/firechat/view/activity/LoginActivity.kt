@@ -128,6 +128,7 @@ class LoginActivity : AppCompatActivity() {
 
         // Singleton 객체에 uid값 설정
         CurrentUserData.uid = viewModel.currentUserUID
+        CurrentUserData.email = inputEmail.text.toString().trim()
 
         // HomeActivity로 화면 전환
         startActivity(Intent(this, HomeActivity::class.java))

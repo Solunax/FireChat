@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/drawer"
+    android:background="@color/deep_gray"
+    android:layout_gravity="end">
+
+    <TextView
+        android:id="@+id/chatting_room_drawer_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="내정보"
+        android:textSize="36dp"
+        android:textColor="@color/white"
+        android:fontFamily="sans-serif-medium"
+        android:textAlignment="center"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp"/>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/chatting_room_drawer_title"
+        android:paddingLeft="10dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp">
+
+        <ImageView
+            android:id="@+id/home_drawer_profile_image"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:src="@drawable/baseline_person_24"
+
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"/>
+
+        <TextView
+            android:id="@+id/home_drawer_id"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="아이디"
+            android:textSize="24dp"
+            android:fontFamily="sans-serif-medium"
+            android:textColor="@color/white"
+            android:layout_marginStart="12dp"
+
+            app:layout_constraintStart_toEndOf="@id/home_drawer_profile_image"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/home_drawer_email"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="이메일"
+            android:textSize="24dp"
+            android:fontFamily="sans-serif-medium"
+            android:textColor="@color/white"
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="6dp"
+
+            app:layout_constraintStart_toEndOf="@id/home_drawer_profile_image"
+            app:layout_constraintTop_toBottomOf="@id/home_drawer_id"
+            app:layout_constraintBottom_toBottomOf="parent"/>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <View
+        android:id="@+id/bottom_divider"
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:background="@color/white"
+        android:layout_above="@id/home_drawer_bottom_menu"/>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/home_drawer_bottom_menu"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp"
+        android:layout_alignParentBottom="true">
+
+        <ImageButton
+            android:id="@+id/home_drawer_bottom_menu_logout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@android:color/transparent"
+            android:src="@drawable/baseline_logout_24"
+
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"/>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</RelativeLayout>
