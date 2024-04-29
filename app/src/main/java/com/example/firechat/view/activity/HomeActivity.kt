@@ -1,10 +1,13 @@
 package com.example.firechat.view.activity
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.provider.MediaStore
 import android.widget.ImageButton
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -13,20 +16,35 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.bumptech.glide.request.RequestOptions
+import com.example.firechat.R
 import com.example.firechat.databinding.HomeActivityBinding
+import com.example.firechat.databinding.HomeNavigationBinding
 import com.example.firechat.model.data.CurrentUserData
 import com.example.firechat.service.TaskRemoveService
 import com.example.firechat.view.adapter.ChattingListRecyclerAdapter
+import com.example.firechat.view.dialog.LoadingDialog
 import com.example.firechat.viewModel.AuthViewModel
+import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.storage.StorageReference
 
 class HomeActivity : AppCompatActivity() {
     private lateinit var binding: HomeActivityBinding
+    private lateinit var drawer: HomeNavigationBinding
     private lateinit var drawerLayout: DrawerLayout
     private lateinit var drawerButton: ImageButton
+    private lateinit var drawerProfile: ImageButton
     private lateinit var newChatButton: ImageButton
     private lateinit var logoutButton: ImageButton
     private lateinit var chattingRoomRecycler: RecyclerView
+    private lateinit var loadingDialog: LoadingDialog
+
     private lateinit var uid: String
+    private lateinit var profileURI: Uri
+    private lateinit var firebaseStorage: FirebaseStorage
+    private lateinit var profileReference: StorageReference
     private var lastBackPressedTime = 0L
     private val viewModel: AuthViewModel by viewModels()
 
@@ -56,6 +74,8 @@ class HomeActivity : AppCompatActivity() {
     // 현재 사용자 정보를 가지고 있는 Singleton 객체에서 uid를 가져옴
     private fun initProperty() {
         uid = CurrentUserData.uid!!
+        firebaseStorage = FirebaseStorage.getInstance()
+        profileReference = firebaseStorage.getReference("$uid/profile.jpg")
     }
 
     private fun initView() {
@@ -63,15 +83,17 @@ class HomeActivity : AppCompatActivity() {
         newChatButton = binding.newChat
         drawerButton = binding.homeDrawerButton
         drawerLayout = binding.homeDrawerLayout
+        loadingDialog = LoadingDialog(this)
 
         // 채팅방 드로어에 사용할 View 초기화
         // 드로어 내의 요소에 접근할 때 ViewBinding을 이용
         // 나가기 버튼은 드로어 하단에 위치함
-        val drawer = binding.homeDrawer
+        drawer = binding.homeDrawer
         logoutButton = drawer.homeDrawerBottomMenuLogout
-
+        drawerProfile = drawer.homeDrawerProfileImage
         drawer.homeDrawerId.text = CurrentUserData.userName
         drawer.homeDrawerEmail.text = CurrentUserData.email
+        getProfileImage()
     }
 
     private fun initListener() {
@@ -90,7 +112,26 @@ class HomeActivity : AppCompatActivity() {
         drawerButton.setOnClickListener {
             drawerLayout.openDrawer(GravityCompat.END)
         }
+
+        // 드로어의 프로필 이미지를 누르면 새로운 프로필 이미지를 업로드하기 위한 과정 수행
+        drawerProfile.setOnClickListener {
+            val intent =
+                Intent(Intent.ACTION_GET_CONTENT, MediaStore.Images.Media.INTERNAL_CONTENT_URI)
+            registerForActivityResult.launch(intent)
+        }
     }
+
+    // 프로필 이미지를 새로운 이미지로 바꾸기 위한 작업 수행
+    private val registerForActivityResult =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            when (result.resultCode) {
+                RESULT_OK -> {
+                    loadingDialog.show()
+                    profileURI = result.data?.data!!
+                    uploadProfileImage()
+                }
+            }
+        }
 
     // 리사이클러 뷰를 초기화하는 메소드
     // decoration을 사용해 Item에 구분선을 추가함
@@ -120,6 +161,33 @@ class HomeActivity : AppCompatActivity() {
             }.show()
     }
 
+    // 드로어에 현재 유저의 프로필 이미지를 불러오는 메소드
+    // 이미지를 원형으로 잘라서(RequestOptions().circleCrop()) 삽입
+    private fun getProfileImage() {
+        Glide.with(this)
+            .load(profileReference)
+            .diskCacheStrategy(DiskCacheStrategy.NONE)
+            .skipMemoryCache(true)
+            .placeholder(R.drawable.baseline_person_24)
+            .apply(RequestOptions().circleCrop())
+            .into(drawerProfile)
+    }
+
+    // 새로운 프로필 이미지를 업로드하는 메소드
+    private fun uploadProfileImage() {
+        // 사용자의 uid/profile.jpg로 FireStorage 파일 경로 지정
+        val ref = firebaseStorage.getReference(uid).child("profile.jpg")
+
+        // URI를 사용해 서버에 프로필 이미지를 업로드
+        ref.putFile(profileURI).addOnSuccessListener {
+            Toast.makeText(this, "프로필 이미지 업로드를 성공했습니다.", Toast.LENGTH_SHORT).show()
+            getProfileImage()
+        }.addOnFailureListener {
+            Toast.makeText(this, "프로필 이미지 업로드를 실패했습니다.", Toast.LENGTH_SHORT).show()
+        }
+        loadingDialog.dismiss()
+    }
+
     // 뒤로가기 버튼을 두번 클릭시 앱을 종료하는 기능을 수행하는 콜백
     private val backPressedCallback = object : OnBackPressedCallback(true) {
         override fun handleOnBackPressed() {
@@ -129,8 +197,11 @@ class HomeActivity : AppCompatActivity() {
             } else {
                 if (System.currentTimeMillis() > lastBackPressedTime + 2000) {
                     lastBackPressedTime = System.currentTimeMillis()
-                    Toast.makeText(this@HomeActivity, "뒤로가기 버튼을 한번 더 누르면 앱이 종료됩니다.", Toast.LENGTH_SHORT)
-                        .show()
+                    Toast.makeText(
+                        this@HomeActivity,
+                        "뒤로가기 버튼을 한번 더 누르면 앱이 종료됩니다.",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 } else {
                     finish()
                 }

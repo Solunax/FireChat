@@ -154,11 +154,11 @@ class ChattingRoomActivity : AppCompatActivity() {
 
     // 드로어에 현재 채팅방 참여자를 설정하는 함수
     private fun setDrawerUserList() {
-        val userList = ArrayList<String>()
-        userList.add("${CurrentUserData.userName!!} (나)")
-        userList.add(opponentUser.name!!)
+        val userList = ArrayList<Pair<String, String>>()
+        userList.add(Pair("${CurrentUserData.userName!!} (나)", "${CurrentUserData.uid}"))
+        userList.add(Pair(opponentUser.name!!, opponentUser.uid!!))
 
-        val adapter = DrawerUserListViewAdapter(userList)
+        val adapter = DrawerUserListViewAdapter(this, userList)
         drawerUserListView.adapter = adapter
     }
 
