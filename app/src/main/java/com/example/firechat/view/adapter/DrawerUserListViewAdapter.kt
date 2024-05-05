@@ -15,8 +15,9 @@ import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
 
 // 채팅방 드로어에 사용할 ListViewAdapter
-class DrawerUserListViewAdapter(private val context: Context, private val userList: ArrayList<Pair<String, String>>) :
+class DrawerUserListViewAdapter(private val userList: ArrayList<Pair<String, String>>) :
     BaseAdapter(){
+    lateinit var context: Context
 
     override fun getCount(): Int {
         return userList.size
@@ -31,6 +32,7 @@ class DrawerUserListViewAdapter(private val context: Context, private val userLi
     }
 
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+        context = parent.context
         val binding = if (convertView == null) {
             val tempBinding = ChattingRoomDrawerListItemBinding.inflate(LayoutInflater.from(parent.context))
             tempBinding.root.tag = tempBinding

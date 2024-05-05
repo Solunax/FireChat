@@ -158,7 +158,7 @@ class ChattingRoomActivity : AppCompatActivity() {
         userList.add(Pair("${CurrentUserData.userName!!} (나)", "${CurrentUserData.uid}"))
         userList.add(Pair(opponentUser.name!!, opponentUser.uid!!))
 
-        val adapter = DrawerUserListViewAdapter(this, userList)
+        val adapter = DrawerUserListViewAdapter(userList)
         drawerUserListView.adapter = adapter
     }
 

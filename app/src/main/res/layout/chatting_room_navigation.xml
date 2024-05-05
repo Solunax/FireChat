@@ -49,6 +49,7 @@
         android:layout_above="@id/bottom_divider"
         android:layout_below="@id/listview_divider"
         android:divider="@android:color/transparent"
+        android:dividerHeight="10dp"
         android:paddingStart="10dp"
         android:paddingEnd="10dp"/>
 
