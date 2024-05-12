@@ -38,7 +38,7 @@ class HomeActivity : AppCompatActivity() {
     private lateinit var drawerProfile: ImageButton
     private lateinit var newChatButton: ImageButton
     private lateinit var logoutButton: ImageButton
-    private lateinit var chattingRoomRecycler: RecyclerView
+    lateinit var chattingRoomRecycler: RecyclerView
     private lateinit var loadingDialog: LoadingDialog
 
     private lateinit var uid: String
@@ -140,7 +140,11 @@ class HomeActivity : AppCompatActivity() {
         val decoration = DividerItemDecoration(applicationContext, DividerItemDecoration.VERTICAL)
         chattingRoomRecycler.addItemDecoration(decoration)
 
-        chattingRoomRecycler.adapter = ChattingListRecyclerAdapter()
+        val adapter = ChattingListRecyclerAdapter(this)
+        adapter.setHasStableIds(true)
+        chattingRoomRecycler.setHasFixedSize(true)
+        chattingRoomRecycler.recycledViewPool.setMaxRecycledViews(0, 0)
+        chattingRoomRecycler.adapter = adapter
     }
 
     // 로그아웃 메소드

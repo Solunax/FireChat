@@ -3,11 +3,15 @@ package com.example.firechat.view.adapter
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.firechat.R
 import com.example.firechat.databinding.ChattingListRecyclerItemBinding
@@ -18,6 +22,7 @@ import com.example.firechat.model.data.CurrentUserData
 import com.example.firechat.model.data.Message
 import com.example.firechat.model.data.User
 import com.example.firechat.view.activity.ChattingRoomActivity
+import com.example.firechat.view.activity.HomeActivity
 import com.google.firebase.database.ChildEventListener
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -27,12 +32,28 @@ import com.google.firebase.database.getValue
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
-class ChattingListRecyclerAdapter :
-    RecyclerView.Adapter<ChattingListRecyclerAdapter.ViewHolder>() {
-    val chattingRooms = ArrayList<ChattingRoom>()
-    val chattingRoomKeys = ArrayList<String>()
+class ChattingListRecyclerAdapter(private val context: Context) :
+    ListAdapter<Pair<String, ChattingRoom>, ChattingListRecyclerAdapter.ViewHolder>(DataComparator) {
     private val db = FirebaseDatabase.getInstance()
-    private lateinit var context: Context
+    private val dataList = HashMap<String, ChattingRoom>()
+    private var sortedList = emptyList<Pair<String, ChattingRoom>>()
+    private val recyclerView = (context as HomeActivity).chattingRoomRecycler
+
+    companion object DataComparator : DiffUtil.ItemCallback<Pair<String, ChattingRoom>>() {
+        override fun areItemsTheSame(
+            oldItem: Pair<String, ChattingRoom>,
+            newItem: Pair<String, ChattingRoom>
+        ): Boolean {
+            return oldItem == newItem
+        }
+
+        override fun areContentsTheSame(
+            oldItem: Pair<String, ChattingRoom>,
+            newItem: Pair<String, ChattingRoom>
+        ): Boolean {
+            return oldItem.first == newItem.first
+        }
+    }
 
     // 리사이클러 뷰 초기화시 수행되는 메소드
     init {
@@ -46,23 +67,19 @@ class ChattingListRecyclerAdapter :
         db.getReference("ChattingRoom")
             .orderByChild("users/${CurrentUserData.uid}/joinState").equalTo(true)
             .addChildEventListener(object : ChildEventListener {
-                // Adapter 생성시 채팅방의 정보를 가져와 ArrayList에 저장
+                // Adapter 생성시 채팅방의 정보를 가져와 HashMap에 저장
                 // 최초 설정 이후 새로 추가된 정보만 가져옴
                 override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
-                    chattingRoomKeys.add(snapshot.key!!)
-                    chattingRooms.add(snapshot.getValue<ChattingRoom>()!!)
-
-                    notifyItemInserted(chattingRooms.lastIndex)
+                    dataList[snapshot.key!!] = snapshot.getValue<ChattingRoom>()!!
+                    sortData()
                 }
 
                 // 채팅방 정보가 갱신되었을 경우 호출함
-                // snapshot의 Key를 바탕으로 기존 배열에 저장된 정보를 새로 받은 정보로 갱신함
+                // snapshot의 Key를 바탕으로 기존에 저장된 정보를 새로 받은 정보로 갱신함
                 override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
                     val data = snapshot.getValue<ChattingRoom>()!!
-                    val index = chattingRoomKeys.indexOf(snapshot.key)
-                    chattingRooms[index] = data
-
-                    notifyItemChanged(index)
+                    dataList[snapshot.key!!] = data
+                    sortData()
                 }
 
                 override fun onChildRemoved(snapshot: DataSnapshot) {
@@ -76,20 +93,31 @@ class ChattingListRecyclerAdapter :
             })
     }
 
+    fun sortData() {
+        submitList(null)
+        sortedList = dataList.toList()
+            .sortedWith(nullsLast(compareByDescending { getLastMessage(it.second)?.sendingDate }))
+        submitList(sortedList)
+
+        // adapter의 list 정렬 후 가장 위로 스크롤함
+        Handler(Looper.getMainLooper()).postDelayed({
+            recyclerView.scrollToPosition(0)
+        }, 200)
+    }
+
     override fun onCreateViewHolder(
         parent: ViewGroup,
         viewType: Int
     ): ViewHolder {
-        context = parent.context
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.chatting_list_recycler_item, parent, false)
         return ViewHolder(ChattingListRecyclerItemBinding.bind(view))
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val chattingRoomKey = chattingRoomKeys[position]
-        val chattingRoomData = chattingRooms[position]
-        val userKeys = chattingRooms[position].users!!.keys
+        val chattingRoomKey = currentList[position].first
+        val chattingRoomData = currentList[position].second
+        val userKeys = chattingRoomData.users!!.keys
         val opponentKey = userKeys.first { it != CurrentUserData.uid }
         var initializeCheck = false
         lateinit var opponentUser: User
@@ -116,9 +144,9 @@ class ChattingListRecyclerAdapter :
         @RequiresApi(Build.VERSION_CODES.O)
         if (chattingRoomData.messages!!.isNotEmpty()) {
             val lastMessage = getLastMessage(chattingRoomData)
-            holder.lastChat.text = lastMessage.content
+            holder.lastChat.text = lastMessage?.content
             holder.lastSendTime.text =
-                getLastMessageTimeString(lastMessage.sendingDate)
+                getLastMessageTimeString(lastMessage!!.sendingDate)
             val unReadCount = getUnreadCount(CurrentUserData.uid!!, chattingRoomData)
 
             // 읽지 않은 메세지가 없으면 view의 카운트를 안보이게 설정함
@@ -144,7 +172,6 @@ class ChattingListRecyclerAdapter :
         }
 
         holder.chattingRoomBackground.setOnLongClickListener {
-            val pos = holder.adapterPosition
             AlertDialog.Builder(context)
                 .setTitle("채팅방 나가기")
                 .setMessage("채팅방에서 나가시겠습니까?")
@@ -154,9 +181,8 @@ class ChattingListRecyclerAdapter :
                         .child("joinState").setValue(false)
                     chattingRoomAvailableCheck(chattingRoomKey)
 
-                    chattingRoomKeys.removeAt(pos)
-                    chattingRooms.removeAt(pos)
-                    notifyItemRemoved(pos)
+                    dataList.remove(chattingRoomKey)
+                    sortData()
                 }
                 .setNegativeButton("취소") { dialog, _ ->
                     dialog.dismiss()
@@ -171,7 +197,7 @@ class ChattingListRecyclerAdapter :
     }
 
     override fun getItemCount(): Int {
-        return chattingRooms.size
+        return currentList.size
     }
 
     inner class ViewHolder(binding: ChattingListRecyclerItemBinding) :
@@ -184,8 +210,8 @@ class ChattingListRecyclerAdapter :
     }
 
     // 해당 채팅방에서 마지막으로 전송된 메세지를 확인하여 반환하는 메소드
-    private fun getLastMessage(chattingRoomData: ChattingRoom): Message {
-        return chattingRoomData.messages!!.values.maxByOrNull { it.sendingDate }!!
+    private fun getLastMessage(chattingRoomData: ChattingRoom): Message? {
+        return chattingRoomData.messages!!.values.maxByOrNull { it.sendingDate }
     }
 
     // 현재 사용자가 해당 채팅방에서 읽지 않은 메세지의 갯수를 확인하여 반환하는 메소드

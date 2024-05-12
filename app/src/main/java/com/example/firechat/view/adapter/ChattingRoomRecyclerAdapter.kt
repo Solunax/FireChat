@@ -27,7 +27,7 @@ class ChattingRoomRecyclerAdapter(
     val allMessage = ArrayList<Message>()
     val messageKeys = ArrayList<String>()
     private val db = FirebaseDatabase.getInstance()
-    val recyclerView = (context as ChattingRoomActivity).messageRecyclerView
+    private val recyclerView = (context as ChattingRoomActivity).messageRecyclerView
 
     init {
         setMessage()
