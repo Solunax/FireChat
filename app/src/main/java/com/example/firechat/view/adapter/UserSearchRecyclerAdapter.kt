@@ -6,6 +6,8 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.firechat.R
 import com.example.firechat.databinding.NewChatUserSearchResultItemBinding
@@ -22,12 +24,21 @@ import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.getValue
 
 class UserSearchRecyclerAdapter :
-    RecyclerView.Adapter<UserSearchRecyclerAdapter.ViewHolder>() {
-    private var userList = ArrayList<User>()
+    ListAdapter<User, UserSearchRecyclerAdapter.ViewHolder>(DataComparator) {
     private var allUserList = ArrayList<User>()
     private val db = FirebaseDatabase.getInstance()
     private lateinit var context: Context
     private lateinit var loadingDialog: LoadingDialog
+
+    companion object DataComparator : DiffUtil.ItemCallback<User>() {
+        override fun areItemsTheSame(oldItem: User, newItem: User): Boolean {
+            return oldItem == newItem
+        }
+
+        override fun areContentsTheSame(oldItem: User, newItem: User): Boolean {
+            return oldItem.uid == newItem.uid
+        }
+    }
 
     // 리사이클러 뷰 초기화시 수행되는 메소드
     init {
@@ -41,7 +52,6 @@ class UserSearchRecyclerAdapter :
             .addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     allUserList.clear()
-                    userList.clear()
 
                     for (data in snapshot.children) {
                         val item = data.getValue<User>()
@@ -53,8 +63,7 @@ class UserSearchRecyclerAdapter :
                         allUserList.add(item!!)
                     }
 
-                    userList.addAll(allUserList)
-                    notifyDataSetChanged()
+                    submitList(allUserList)
                 }
 
                 override fun onCancelled(error: DatabaseError) {
@@ -67,14 +76,14 @@ class UserSearchRecyclerAdapter :
     // 사용자가 글자 입력 시, 사용자 정보 배열에서 해당 글자가 포함돼 있는지 확인 후
     // 해당 글자가 포함된 경우로 필터링하여 결과를 표시함
     fun searchName(name: String) {
-        userList.clear()
+        submitList(null)
+
         if (name == "") {
-            userList.addAll(allUserList)
+            submitList(allUserList)
         } else {
             val matchList = allUserList.filter { it.name!!.contains(name) }
-            userList.addAll(matchList)
+            submitList(matchList)
         }
-        notifyDataSetChanged()
     }
 
     override fun onCreateViewHolder(
@@ -84,13 +93,13 @@ class UserSearchRecyclerAdapter :
         context = parent.context
         loadingDialog = LoadingDialog(context)
         val view = LayoutInflater.from(context)
-                .inflate(R.layout.new_chat_user_search_result_item, parent, false)
+            .inflate(R.layout.new_chat_user_search_result_item, parent, false)
         return ViewHolder(NewChatUserSearchResultItemBinding.bind(view))
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.name.text = userList[position].name
-        holder.email.text = userList[position].email
+        holder.name.text = currentList[position].name
+        holder.email.text = currentList[position].email
 
         // 검색창에서 나오는 사용자를 클릭시, 새로운 채팅방을 생성함
         holder.background.setOnClickListener {
@@ -105,7 +114,7 @@ class UserSearchRecyclerAdapter :
     private fun createChattingRoom(position: Int) {
         // 채팅방 생성에 필요한 데이터를 가져오는 동안 로딩 다이얼로그 표시
         loadingDialog.show()
-        val opponent = userList[position]
+        val opponent = currentList[position]
         val chatRoom = ChattingRoom(
             mapOf(
                 Pair(CurrentUserData.uid!!, ChattingState(joinState = true, onlineState = true)),
@@ -164,7 +173,7 @@ class UserSearchRecyclerAdapter :
     }
 
     override fun getItemCount(): Int {
-        return userList.size
+        return currentList.size
     }
 
     inner class ViewHolder(binding: NewChatUserSearchResultItemBinding) :
