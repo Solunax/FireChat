@@ -32,6 +32,8 @@ import com.google.firebase.database.getValue
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
+// ListAdapter를 사용하면 AsyncDiffer(스레드 처리)를 더 편하게 사용할 수 있음
+// submitList로 데이터를 갱신, currentList로 현재 데이터를 참조할 수 있음
 class ChattingListRecyclerAdapter(private val context: Context) :
     ListAdapter<Pair<String, ChattingRoom>, ChattingListRecyclerAdapter.ViewHolder>(DataComparator) {
     private val db = FirebaseDatabase.getInstance()
@@ -39,6 +41,9 @@ class ChattingListRecyclerAdapter(private val context: Context) :
     private var sortedList = emptyList<Pair<String, ChattingRoom>>()
     private val recyclerView = (context as HomeActivity).chattingRoomRecycler
 
+    // 데이터 셋을 받아 차이를 계산
+    // areItemsTheSame은 두 객체가 동일객체인지 확인
+    // areContentsTheSame은 두 아이템이 동일한 데이터를 가지는지 확인함
     companion object DataComparator : DiffUtil.ItemCallback<Pair<String, ChattingRoom>>() {
         override fun areItemsTheSame(
             oldItem: Pair<String, ChattingRoom>,
@@ -47,6 +52,7 @@ class ChattingListRecyclerAdapter(private val context: Context) :
             return oldItem == newItem
         }
 
+        // 채팅방 Key값 비교
         override fun areContentsTheSame(
             oldItem: Pair<String, ChattingRoom>,
             newItem: Pair<String, ChattingRoom>
@@ -93,6 +99,9 @@ class ChattingListRecyclerAdapter(private val context: Context) :
             })
     }
 
+    // 서버로부터 받아온 데이터를 정렬하는 메소드
+    // 정렬 기준 : 가장 마지막에 받은 메세지 시간기준으로 내림차순(최근순)
+    // 채팅방만 생성되고 메세지를 받은적이 없다면 맨 뒤로 위치시킴
     fun sortData() {
         submitList(null)
         sortedList = dataList.toList()

@@ -23,6 +23,8 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.getValue
 
+// ListAdapter를 사용하면 AsyncDiffer(스레드 처리)를 더 편하게 사용할 수 있음
+// submitList로 데이터를 갱신, currentList로 현재 데이터를 참조할 수 있음
 class UserSearchRecyclerAdapter :
     ListAdapter<User, UserSearchRecyclerAdapter.ViewHolder>(DataComparator) {
     private var allUserList = ArrayList<User>()
@@ -30,11 +32,15 @@ class UserSearchRecyclerAdapter :
     private lateinit var context: Context
     private lateinit var loadingDialog: LoadingDialog
 
+    // 데이터 셋을 받아 차이를 계산
+    // areItemsTheSame은 두 객체가 동일객체인지 확인
+    // areContentsTheSame은 두 아이템이 동일한 데이터를 가지는지 확인함
     companion object DataComparator : DiffUtil.ItemCallback<User>() {
         override fun areItemsTheSame(oldItem: User, newItem: User): Boolean {
             return oldItem == newItem
         }
 
+        // 사용자 UID 비교
         override fun areContentsTheSame(oldItem: User, newItem: User): Boolean {
             return oldItem.uid == newItem.uid
         }
