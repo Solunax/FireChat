@@ -17,7 +17,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.firechat.databinding.ChattingRoomActivityBinding
 import com.example.firechat.model.data.ChattingState
@@ -26,6 +25,7 @@ import com.example.firechat.model.data.Message
 import com.example.firechat.model.data.User
 import com.example.firechat.view.adapter.ChattingRoomRecyclerAdapter
 import com.example.firechat.view.adapter.DrawerUserListViewAdapter
+import com.example.firechat.view.adapter.LinearLayoutWrapper
 import com.example.firechat.view.dialog.LoadingDialog
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -262,17 +262,20 @@ class ChattingRoomActivity : AppCompatActivity() {
     // 리사이클러 뷰에 어댑터를 할당하는 메소드
     // 이 시점에서 사용자가 채팅방을 보는 상태라는 것을 DB에 저장(changeOnlineState - state = true)
     private fun setRecycler() {
-        messageRecyclerView.layoutManager = LinearLayoutManager(this)
+        messageRecyclerView.layoutManager = LinearLayoutWrapper(this)
         messageRecyclerView.adapter = ChattingRoomRecyclerAdapter(this, chatRoomKey)
         getOpponentOnlineState()
         changeOnlineState(true)
 
         // 소프트 키보드 사용시 리사이클러 뷰의 마지막 항목을 표시하는 기능을 수행
-        // 메세지 갯수가 1개 이상일 경우 수행
-        messageRecyclerView.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-            messageRecyclerView.post {
-                messageRecyclerView.adapter?.itemCount?.takeIf { it > 0 }?.let {
-                    messageRecyclerView.smoothScrollToPosition(it - 1)
+        // 소프트 키보드가 화면에 표시되면 View의 하단 값이 바뀌기 때문에 스크롤 수행함
+        // 또한 메세지 갯수가 1개 이상일 경우 수행(메세지가 없을 경우 수행할 이유가 없음)
+        messageRecyclerView.addOnLayoutChangeListener { _, _, _, _, bottom, _, _, _, oldBottom ->
+            if (bottom < oldBottom) {
+                messageRecyclerView.post {
+                    messageRecyclerView.adapter?.itemCount?.takeIf { it > 0 }?.let {
+                        messageRecyclerView.smoothScrollToPosition(it - 1)
+                    }
                 }
             }
         }

@@ -2,9 +2,13 @@ package com.example.firechat.view.adapter
 
 import android.app.AlertDialog
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.firechat.R
 import com.example.firechat.model.data.Message
@@ -23,11 +27,28 @@ import java.lang.StringBuilder
 class ChattingRoomRecyclerAdapter(
     private val context: Context,
     var chattingRoomKey: String
-) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-    val allMessage = ArrayList<Message>()
-    val messageKeys = ArrayList<String>()
+) : ListAdapter<Pair<String, Message>, RecyclerView.ViewHolder>(DataComparator) {
+    private val messageData = LinkedHashMap<String, Message>()
+    private var messageKey = emptyList<String>()
+    private var messageBody = emptyList<Message>()
     private val db = FirebaseDatabase.getInstance()
     private val recyclerView = (context as ChattingRoomActivity).messageRecyclerView
+
+    companion object DataComparator : DiffUtil.ItemCallback<Pair<String,Message>>() {
+        override fun areItemsTheSame(
+            oldItem: Pair<String, Message>,
+            newItem: Pair<String, Message>
+        ): Boolean {
+            return oldItem == newItem
+        }
+
+        override fun areContentsTheSame(
+            oldItem: Pair<String, Message>,
+            newItem: Pair<String, Message>
+        ): Boolean {
+            return oldItem.second == newItem.second
+        }
+    }
 
     init {
         setMessage()
@@ -46,13 +67,16 @@ class ChattingRoomRecyclerAdapter(
                 // 최초 설정 이후 새로 추가된 값만 가져옴
                 // 새로운 값이 추가되었을 때 RecyclerView를 다시 만드는게(notifyDataSetChanged) 아닌 새로 추가된 값만 추가함
                 override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
-                    messageKeys.add(snapshot.key!!)
-                    allMessage.add(snapshot.getValue<Message>()!!)
+                    messageData[snapshot.key!!] = snapshot.getValue<Message>()!!
+                    messageKey = messageData.keys.toList()
+                    messageBody = messageData.values.toList()
 
-                    notifyItemInserted(allMessage.lastIndex)
+                    submitList(messageData.toList())
 
                     // 사용자가 가장 최근에 온 메세지를 확인할 수 있게 스크롤
-                    recyclerView.scrollToPosition(allMessage.size - 1)
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        recyclerView.scrollToPosition(itemCount - 1)
+                    }, 200)
                 }
 
                 // 메세지 읽음 상태 변경시 호출됨
@@ -60,23 +84,21 @@ class ChattingRoomRecyclerAdapter(
                 // snapshot으로 가져온 Message Key값으로
                 // 해당 인덱스 번호의 메세지 정보의 confirmed 값을 수정
                 override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
-                    val index = messageKeys.indexOf(snapshot.key)
-                    allMessage[index].confirmed = true
+                    messageData[snapshot.key]!!.confirmed = true
+                    messageBody = messageData.values.toList()
 
-                    notifyItemChanged(index)
+                    submitList(messageData.toList())
                 }
 
                 // 유저가 메세지를 삭제할 때 호출됨
                 // 가져온 Key, Messsage를 바탕으로 기존 배열에 존재하던 Key, Message 인스턴스를 삭제
                 override fun onChildRemoved(snapshot: DataSnapshot) {
-                    val data = snapshot.getValue<Message>()!!
-                    val index = allMessage.indexOf(data)
-                    allMessage.remove(data)
-                    messageKeys.remove(snapshot.key)
+                    messageData.remove(snapshot.key)
 
-                    notifyItemRemoved(index)
-                    // 사용자가 가장 최근에 온 메세지를 확인할 수 있게 스크롤
-                    recyclerView.scrollToPosition(allMessage.size - 1)
+                    messageKey = messageData.keys.toList()
+                    messageBody = messageData.values.toList()
+
+                    submitList(messageData.toList())
                 }
 
                 override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {
@@ -89,7 +111,7 @@ class ChattingRoomRecyclerAdapter(
 
     // 메세지를 누가 보냈느냐에 따라서 내용을 분리하는 메소드
     override fun getItemViewType(position: Int): Int {
-        return if (allMessage[position].senderUid == CurrentUserData.uid) {
+        return if (messageBody[position].senderUid == CurrentUserData.uid) {
             1
         } else {
             0
@@ -118,7 +140,7 @@ class ChattingRoomRecyclerAdapter(
 
     // 메세지를 전송한 사람이 누구인지에 따라서 My, Opponent 분리
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        if (allMessage[position].senderUid == CurrentUserData.uid) {
+        if (messageBody[position].senderUid == CurrentUserData.uid) {
             (holder as MyMessageViewHolder).bind(position)
         } else {
             (holder as OpponentMessageViewHolder).bind(position)
@@ -126,7 +148,7 @@ class ChattingRoomRecyclerAdapter(
     }
 
     override fun getItemCount(): Int {
-        return allMessage.size
+        return messageData.size
     }
 
     inner class MyMessageViewHolder(binding: MessageMyItemBinding) :
@@ -137,7 +159,7 @@ class ChattingRoomRecyclerAdapter(
 
         // 현재 메세지의 내용, 전송 시간, 읽기 여부를 리사이클러 뷰 Item에 표시
         fun bind(position: Int) {
-            val message = allMessage[position]
+            val message = messageBody[position]
             val sendDate = message.sendingDate
 
             date.text = getDateText(sendDate)
@@ -158,7 +180,7 @@ class ChattingRoomRecyclerAdapter(
                     .setMessage("해당 메세지를 삭제하시겠습니까?")
                     .setPositiveButton("네") { _, _ ->
                         db.getReference("ChattingRoom").child(chattingRoomKey)
-                            .child("messages").child(messageKeys[position]).removeValue()
+                            .child("messages").child(messageKey[position]).removeValue()
                     }
                     .setNegativeButton("아니요") { dialog, _ ->
                         dialog.dismiss()
@@ -166,28 +188,6 @@ class ChattingRoomRecyclerAdapter(
 
                 return@setOnLongClickListener true
             }
-        }
-
-        // 메세지가 전송된 시간을 YYYY-MM-DD HH:MM 형식 문자열로 만들어주는 메소드
-        private fun getDateText(sendTime: String): String {
-            val timeData = ChattingRoomTimeData(sendTime)
-            val timeText = StringBuilder()
-            val dateFormat = "%04d-%02d-%02d"
-            val timeFormat = "%02d:%02d"
-
-            timeText.append("${dateFormat.format(timeData.year, timeData.month, timeData.date)}\n")
-
-            if (timeData.hour == 24) {
-                timeText.append("오전 ${timeFormat.format(0, timeData.minute)}")
-            } else if (timeData.hour == 12) {
-                timeText.append("오후 ${timeFormat.format(12, timeData.minute)}")
-            } else if (timeData.hour > 12) {
-                timeText.append("오후 ${timeFormat.format(timeData.hour - 12, timeData.minute)}")
-            } else {
-                timeText.append("오전 ${timeFormat.format(timeData.hour, timeData.minute)}")
-            }
-
-            return timeText.toString()
         }
     }
 
@@ -199,7 +199,7 @@ class ChattingRoomRecyclerAdapter(
 
         // 현재 메세지의 내용, 전송 시간, 읽기 여부를 리사이클러 뷰 Item에 표시
         fun bind(position: Int) {
-            val message = allMessage[position]
+            val message = messageBody[position]
             val sendDate = message.sendingDate
 
             date.text = getDateText(sendDate)
@@ -218,30 +218,30 @@ class ChattingRoomRecyclerAdapter(
         private fun setReadState(position: Int) {
             db.getReference("ChattingRoom")
                 .child(chattingRoomKey).child("messages")
-                .child(messageKeys[position]).child("confirmed")
+                .child(messageKey[position]).child("confirmed")
                 .setValue(true)
         }
+    }
 
-        // 메세지가 전송된 시간을 YYYY-MM-DD HH:MM 형식 문자열로 만들어주는 메소드
-        private fun getDateText(sendTime: String): String {
-            val timeData = ChattingRoomTimeData(sendTime)
-            val timeText = StringBuilder()
-            val dateFormat = "%04d-%02d-%02d"
-            val timeFormat = "%02d:%02d"
+    // 메세지가 전송된 시간을 YYYY-MM-DD HH:MM 형식 문자열로 만들어주는 메소드
+    private fun getDateText(sendTime: String): String {
+        val timeData = ChattingRoomTimeData(sendTime)
+        val timeText = StringBuilder()
+        val dateFormat = "%04d-%02d-%02d"
+        val timeFormat = "%02d:%02d"
 
-            timeText.append("${dateFormat.format(timeData.year, timeData.month, timeData.date)}\n")
+        timeText.append("${dateFormat.format(timeData.year, timeData.month, timeData.date)}\n")
 
-            if (timeData.hour == 24) {
-                timeText.append("오전 ${timeFormat.format(0, timeData.minute)}")
-            } else if (timeData.hour == 12) {
-                timeText.append("오후 ${timeFormat.format(12, timeData.minute)}")
-            } else if (timeData.hour > 12) {
-                timeText.append("오후 ${timeFormat.format(timeData.hour - 12, timeData.minute)}")
-            } else {
-                timeText.append("오전 ${timeFormat.format(timeData.hour, timeData.minute)}")
-            }
-
-            return timeText.toString()
+        if (timeData.hour == 24) {
+            timeText.append("오전 ${timeFormat.format(0, timeData.minute)}")
+        } else if (timeData.hour == 12) {
+            timeText.append("오후 ${timeFormat.format(12, timeData.minute)}")
+        } else if (timeData.hour > 12) {
+            timeText.append("오후 ${timeFormat.format(timeData.hour - 12, timeData.minute)}")
+        } else {
+            timeText.append("오전 ${timeFormat.format(timeData.hour, timeData.minute)}")
         }
+
+        return timeText.toString()
     }
 }
