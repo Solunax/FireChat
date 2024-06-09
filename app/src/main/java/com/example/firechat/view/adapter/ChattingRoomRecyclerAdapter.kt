@@ -34,6 +34,10 @@ class ChattingRoomRecyclerAdapter(
     private val db = FirebaseDatabase.getInstance()
     private val recyclerView = (context as ChattingRoomActivity).messageRecyclerView
 
+    // 데이터 셋을 받아 차이를 계산
+    // areItemsTheSame은 두 객체가 동일객체인지 확인
+    // areContentsTheSame은 두 아이템이 동일한 데이터를 가지는지 확인함
+    // 비교 기준은 메세지의 고유한 Key값과 해당 메세지의 Contents(보낸 사람 UID, 보낸 시각, 내용, 확인 여부)
     companion object DataComparator : DiffUtil.ItemCallback<Pair<String,Message>>() {
         override fun areItemsTheSame(
             oldItem: Pair<String, Message>,
