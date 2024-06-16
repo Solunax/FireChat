@@ -29,6 +29,10 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.getValue
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
@@ -103,15 +107,18 @@ class ChattingListRecyclerAdapter(private val context: Context) :
     // 정렬 기준 : 가장 마지막에 받은 메세지 시간기준으로 내림차순(최근순)
     // 채팅방만 생성되고 메세지를 받은적이 없다면 맨 뒤로 위치시킴
     fun sortData() {
-        submitList(null)
-        sortedList = dataList.toList()
-            .sortedWith(nullsLast(compareByDescending { getLastMessage(it.second)?.sendingDate }))
-        submitList(sortedList)
+        CoroutineScope(Dispatchers.Main).launch {
+            submitList(null)
+            sortedList = dataList.toList()
+                .sortedWith(nullsLast(compareByDescending { getLastMessage(it.second)?.sendingDate }))
 
-        // adapter의 list 정렬 후 가장 위로 스크롤함
-        Handler(Looper.getMainLooper()).postDelayed({
+            // adapter의 list 정렬 후 가장 위로 스크롤함
+            CoroutineScope(Dispatchers.Main).async {
+                submitList(sortedList)
+            }.await()
+
             recyclerView.scrollToPosition(0)
-        }, 200)
+        }
     }
 
     override fun onCreateViewHolder(

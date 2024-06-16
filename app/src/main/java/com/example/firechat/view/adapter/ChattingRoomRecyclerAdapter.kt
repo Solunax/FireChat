@@ -2,8 +2,6 @@ package com.example.firechat.view.adapter
 
 import android.app.AlertDialog
 import android.content.Context
-import android.os.Handler
-import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -22,6 +20,10 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.getValue
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 import java.lang.StringBuilder
 
 class ChattingRoomRecyclerAdapter(
@@ -67,20 +69,23 @@ class ChattingRoomRecyclerAdapter(
         db.getReference("ChattingRoom")
             .child(chattingRoomKey).child("messages")
             .addChildEventListener(object : ChildEventListener {
-                // 채팅방에 입장시 최초 1회는 모든 값을 가져와 messageKey, allMessage 배열을 채우고
+                // 채팅방에 입장시 최초 1회는 모든 값을 가져와 messageKey, allMessage 배열을 채움
                 // 최초 설정 이후 새로 추가된 값만 가져옴
-                // 새로운 값이 추가되었을 때 RecyclerView를 다시 만드는게(notifyDataSetChanged) 아닌 새로 추가된 값만 추가함
                 override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
-                    messageData[snapshot.key!!] = snapshot.getValue<Message>()!!
-                    messageKey = messageData.keys.toList()
-                    messageBody = messageData.values.toList()
+                    CoroutineScope(Dispatchers.Main).launch {
+                        messageData[snapshot.key!!] = snapshot.getValue<Message>()!!
+                        messageKey = messageData.keys.toList()
+                        messageBody = messageData.values.toList()
 
-                    submitList(messageData.toList())
+                        // 사용자가 가장 최근에 온 메세지를 확인할 수 있게 스크롤
+                        // Coroutine의 async와 await를 사용하여 리스트 갱신이 끝날때 까지 대기함
+                        // 리스트 갱신이 완전히 끝나면 마지막 메시지로 스크롤함
+                        CoroutineScope(Dispatchers.Main).async {
+                            submitList(messageData.toList())
+                        }.await()
 
-                    // 사용자가 가장 최근에 온 메세지를 확인할 수 있게 스크롤
-                    Handler(Looper.getMainLooper()).postDelayed({
                         recyclerView.scrollToPosition(itemCount - 1)
-                    }, 200)
+                    }
                 }
 
                 // 메세지 읽음 상태 변경시 호출됨
