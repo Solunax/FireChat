@@ -1,5 +1,6 @@
 package com.example.firechat.view.activity
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -29,6 +30,10 @@ import com.example.firechat.view.dialog.LoadingDialog
 import com.example.firechat.viewModel.AuthViewModel
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class HomeActivity : AppCompatActivity() {
     private lateinit var binding: HomeActivityBinding
@@ -128,7 +133,7 @@ class HomeActivity : AppCompatActivity() {
                 RESULT_OK -> {
                     loadingDialog.show()
                     profileURI = result.data?.data!!
-                    uploadProfileImage()
+                    uploadProfileImage(this)
                 }
             }
         }
@@ -178,18 +183,21 @@ class HomeActivity : AppCompatActivity() {
     }
 
     // 새로운 프로필 이미지를 업로드하는 메소드
-    private fun uploadProfileImage() {
-        // 사용자의 uid/profile.jpg로 FireStorage 파일 경로 지정
-        val ref = firebaseStorage.getReference(uid).child("profile.jpg")
+    private fun uploadProfileImage(context: Context) {
+        CoroutineScope(Dispatchers.IO).launch {
+            // 사용자의 uid/profile.jpg로 FireStorage 파일 경로 지정
+            val ref = firebaseStorage.getReference(uid).child("profile.jpg")
 
-        // URI를 사용해 서버에 프로필 이미지를 업로드
-        ref.putFile(profileURI).addOnSuccessListener {
-            Toast.makeText(this, "프로필 이미지 업로드를 성공했습니다.", Toast.LENGTH_SHORT).show()
-            getProfileImage()
-        }.addOnFailureListener {
-            Toast.makeText(this, "프로필 이미지 업로드를 실패했습니다.", Toast.LENGTH_SHORT).show()
+            // URI를 사용해 서버에 프로필 이미지를 업로드
+            ref.putFile(profileURI).addOnSuccessListener {
+                Toast.makeText(context, "프로필 이미지 업로드를 성공했습니다.", Toast.LENGTH_SHORT).show()
+                getProfileImage()
+            }.addOnFailureListener {
+                Toast.makeText(context, "프로필 이미지 업로드를 실패했습니다.", Toast.LENGTH_SHORT).show()
+            }.await()
+
+            loadingDialog.dismiss()
         }
-        loadingDialog.dismiss()
     }
 
     // 뒤로가기 버튼을 두번 클릭시 앱을 종료하는 기능을 수행하는 콜백
