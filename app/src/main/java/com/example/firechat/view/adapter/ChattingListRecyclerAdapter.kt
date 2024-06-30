@@ -2,13 +2,9 @@ package com.example.firechat.view.adapter
 
 import android.content.Context
 import android.content.Intent
-import android.os.Build
-import android.os.Handler
-import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -157,7 +153,6 @@ class ChattingListRecyclerAdapter(private val context: Context) :
         // 현재 채팅방의 메세지가 하나 이상 있으면
         // 마지막 메세지 내용과 전송된 시간 그리고 읽지 않은 메세지의 갯수를
         // 채팅방 Item에 표시함
-        @RequiresApi(Build.VERSION_CODES.O)
         if (chattingRoomData.messages!!.isNotEmpty()) {
             val lastMessage = getLastMessage(chattingRoomData)
             holder.lastChat.text = lastMessage?.content
@@ -267,7 +262,6 @@ class ChattingListRecyclerAdapter(private val context: Context) :
     }
 
     // 마지막으로 전송된 메세지의 시간을 확인하여 채팅목록에 표시하기 적절한 형태로 문자열을 수정하는 메소드
-    @RequiresApi(Build.VERSION_CODES.O)
     private fun getLastMessageTimeString(lastTimeString: String): String {
         //마지막 메세지가 전송된 시각 구하기
         val lastTimeData = ChattingRoomTimeData(lastTimeString)

@@ -59,7 +59,7 @@ class ChattingRoomActivity : AppCompatActivity() {
     private var joinState = true
     private lateinit var messageRect: Rect
 
-    @RequiresApi(Build.VERSION_CODES.O)
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ChattingRoomActivityBinding.inflate(layoutInflater)
@@ -118,15 +118,11 @@ class ChattingRoomActivity : AppCompatActivity() {
     // 기입된 데이터를 바탕으로 채팅방을 구성함
     // 정보는 채팅방 정보(사용자), 채팅방 고유 Key(ID) 를 포함함
     // 소프트키보드가 열린 상태로 다른곳을 터치하면 소프트 키보드를 닫는 기능을 위해 InputMethodManager 사용
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     private fun initProperty() {
         uid = CurrentUserData.uid!!
         chatRoomKey = intent.getStringExtra("chatRoomKey")!!
-        opponentUser = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            intent.getSerializableExtra("opponent", User::class.java)!!
-        } else {
-            intent.getSerializableExtra("opponent") as User
-        }
-
+        opponentUser = intent.getSerializableExtra("opponent", User::class.java)!!
         inputMethodManager = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
     }
 
@@ -162,7 +158,6 @@ class ChattingRoomActivity : AppCompatActivity() {
         drawerUserListView.adapter = adapter
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     private fun initListener() {
         // 앱 내의 뒤로가기 버튼을 누를시 현재 Activity 종료
         goBackButton.setOnClickListener {
@@ -245,7 +240,6 @@ class ChattingRoomActivity : AppCompatActivity() {
     // 읽은 상태는 현재 상대방이 채팅방 접속 상태에 따라 결정함
     // 예를들어, 상대가 채팅방에 접속한 상태라면 Message 인스턴스의 confirmed 값은 true로
     // 아닐경우는 false로 지정 후 DB에 저장
-    @RequiresApi(Build.VERSION_CODES.O)
     private fun sendMessage() {
         if (messageInput.text.isNotEmpty()) {
             val message = Message(uid, getTimeData(), messageInput.text.toString(), opponentUserOnlineState)
@@ -300,7 +294,6 @@ class ChattingRoomActivity : AppCompatActivity() {
     }
 
     // Message 클래스 구성시 필요한 현재 시간 정보를 변환하는 메소드
-    @RequiresApi(Build.VERSION_CODES.O)
     private fun getTimeData(): String {
         val localDateTime = LocalDateTime.now()
         localDateTime.atZone(TimeZone.getDefault().toZoneId())
