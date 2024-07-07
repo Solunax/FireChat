@@ -11,7 +11,6 @@ import android.widget.ImageButton
 import android.widget.ListView
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -59,7 +58,6 @@ class ChattingRoomActivity : AppCompatActivity() {
     private var joinState = true
     private lateinit var messageRect: Rect
 
-    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ChattingRoomActivityBinding.inflate(layoutInflater)
@@ -118,11 +116,15 @@ class ChattingRoomActivity : AppCompatActivity() {
     // 기입된 데이터를 바탕으로 채팅방을 구성함
     // 정보는 채팅방 정보(사용자), 채팅방 고유 Key(ID) 를 포함함
     // 소프트키보드가 열린 상태로 다른곳을 터치하면 소프트 키보드를 닫는 기능을 위해 InputMethodManager 사용
-    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     private fun initProperty() {
         uid = CurrentUserData.uid!!
         chatRoomKey = intent.getStringExtra("chatRoomKey")!!
-        opponentUser = intent.getSerializableExtra("opponent", User::class.java)!!
+        opponentUser = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            intent.getSerializableExtra("opponent", User::class.java)!!
+        } else {
+            intent.getSerializableExtra("opponent") as User
+        }
+
         inputMethodManager = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
     }
 

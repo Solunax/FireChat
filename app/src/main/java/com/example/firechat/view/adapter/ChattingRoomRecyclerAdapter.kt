@@ -150,9 +150,9 @@ class ChattingRoomRecyclerAdapter(
     // 메세지를 전송한 사람이 누구인지에 따라서 My, Opponent 분리
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (messageBody[position].senderUid == CurrentUserData.uid) {
-            (holder as MyMessageViewHolder).bind(position)
+            (holder as MyMessageViewHolder).bind()
         } else {
-            (holder as OpponentMessageViewHolder).bind(position)
+            (holder as OpponentMessageViewHolder).bind()
         }
     }
 
@@ -167,8 +167,8 @@ class ChattingRoomRecyclerAdapter(
         private val readCheck = binding.messageRead
 
         // 현재 메세지의 내용, 전송 시간, 읽기 여부를 리사이클러 뷰 Item에 표시
-        fun bind(position: Int) {
-            val message = messageBody[position]
+        fun bind() {
+            val message = messageBody[adapterPosition]
             val sendDate = message.sendingDate
 
             date.text = getDateText(sendDate)
@@ -189,7 +189,7 @@ class ChattingRoomRecyclerAdapter(
                     .setMessage("해당 메세지를 삭제하시겠습니까?")
                     .setPositiveButton("네") { _, _ ->
                         db.getReference("ChattingRoom").child(chattingRoomKey)
-                            .child("messages").child(messageKey[position]).removeValue()
+                            .child("messages").child(messageKey[adapterPosition]).removeValue()
                     }
                     .setNegativeButton("아니요") { dialog, _ ->
                         dialog.dismiss()
@@ -207,8 +207,8 @@ class ChattingRoomRecyclerAdapter(
         private val readCheck = binding.messageRead
 
         // 현재 메세지의 내용, 전송 시간, 읽기 여부를 리사이클러 뷰 Item에 표시
-        fun bind(position: Int) {
-            val message = messageBody[position]
+        fun bind() {
+            val message = messageBody[adapterPosition]
             val sendDate = message.sendingDate
 
             date.text = getDateText(sendDate)
@@ -220,7 +220,7 @@ class ChattingRoomRecyclerAdapter(
                 readCheck.visibility = View.VISIBLE
             }
 
-            setReadState(position)
+            setReadState(adapterPosition)
         }
 
         // 사용자가 메세지를 읽었다는 State 값을 변경하는 메소드
