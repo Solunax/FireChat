@@ -31,6 +31,10 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.getValue
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.TimeZone
@@ -68,10 +72,12 @@ class ChattingRoomActivity : AppCompatActivity() {
         initProperty()
         initView()
         initListener()
-        setChattingRoom()
+
+        CoroutineScope(Dispatchers.Main).launch {
+            setChattingRoom()
+        }
 
         onBackPressedDispatcher.addCallback(this, backPressedCallback)
-        loadingDialog.dismiss()
     }
 
     // 소프트 키보드가 활성화된 상태에서 다른곳 터치시 소프트 키보드를 비활성화함
@@ -205,12 +211,16 @@ class ChattingRoomActivity : AppCompatActivity() {
     // 새로만들어진 채팅방이면 이전 Activity에서 Key값을 받지 못했기때문에
     // 서버에 저장된 Key값을 가져옴
     // 그게 아니라면 Key값을 바탕으로 리사이클러뷰(채팅 내역)을 구성함
-    private fun setChattingRoom() {
-        if (chatRoomKey.isBlank()) {
-            setChatRoomKey()
-        } else {
-            setRecycler()
-        }
+    private suspend fun setChattingRoom() {
+        CoroutineScope(Dispatchers.IO).async {
+            if (chatRoomKey.isBlank()) {
+                setChatRoomKey()
+            } else {
+                setRecycler()
+            }
+        }.await()
+
+        loadingDialog.dismiss()
     }
 
     // 새로 만들어진 채팅방의 경우 실행되는 메소드
@@ -258,23 +268,26 @@ class ChattingRoomActivity : AppCompatActivity() {
     // 리사이클러 뷰에 어댑터를 할당하는 메소드
     // 이 시점에서 사용자가 채팅방을 보는 상태라는 것을 DB에 저장(changeOnlineState - state = true)
     private fun setRecycler() {
-        messageRecyclerView.layoutManager = LinearLayoutWrapper(this)
-        messageRecyclerView.adapter = ChattingRoomRecyclerAdapter(this, chatRoomKey)
-        getOpponentOnlineState()
-        changeOnlineState(true)
+        runOnUiThread {
+            messageRecyclerView.layoutManager = LinearLayoutWrapper(this)
+            messageRecyclerView.adapter = ChattingRoomRecyclerAdapter(this, chatRoomKey)
+            getOpponentOnlineState()
+            changeOnlineState(true)
 
-        // 소프트 키보드 사용시 리사이클러 뷰의 마지막 항목을 표시하는 기능을 수행
-        // 소프트 키보드가 화면에 표시되면 View의 하단 값이 바뀌기 때문에 스크롤 수행함
-        // 또한 메세지 갯수가 1개 이상일 경우 수행(메세지가 없을 경우 수행할 이유가 없음)
-        messageRecyclerView.addOnLayoutChangeListener { _, _, _, _, bottom, _, _, _, oldBottom ->
-            if (bottom < oldBottom) {
-                messageRecyclerView.post {
-                    messageRecyclerView.adapter?.itemCount?.takeIf { it > 0 }?.let {
-                        messageRecyclerView.smoothScrollToPosition(it - 1)
+            // 소프트 키보드 사용시 리사이클러 뷰의 마지막 항목을 표시하는 기능을 수행
+            // 소프트 키보드가 화면에 표시되면 View의 하단 값이 바뀌기 때문에 스크롤 수행함
+            // 또한 메세지 갯수가 1개 이상일 경우 수행(메세지가 없을 경우 수행할 이유가 없음)
+            messageRecyclerView.addOnLayoutChangeListener { _, _, _, _, bottom, _, _, _, oldBottom ->
+                if (bottom < oldBottom) {
+                    messageRecyclerView.post {
+                        messageRecyclerView.adapter?.itemCount?.takeIf { it > 0 }?.let {
+                            messageRecyclerView.smoothScrollToPosition(it - 1)
+                        }
                     }
                 }
             }
         }
+
     }
 
     // 상대방이 현재 채팅방에 접속해있는지(채팅방 activity를 보는 상태인지) 상태 값을 메소드
