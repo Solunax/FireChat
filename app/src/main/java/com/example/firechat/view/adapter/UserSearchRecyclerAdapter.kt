@@ -15,6 +15,7 @@ import com.example.firechat.model.data.ChattingRoom
 import com.example.firechat.model.data.ChattingState
 import com.example.firechat.model.data.CurrentUserData
 import com.example.firechat.model.data.User
+import com.example.firechat.util.*
 import com.example.firechat.view.activity.ChattingRoomActivity
 import com.example.firechat.view.dialog.LoadingDialog
 import com.google.firebase.database.DataSnapshot
@@ -158,6 +159,14 @@ class UserSearchRecyclerAdapter :
                         db.getReference("ChattingRoom").push()
                             .setValue(chatRoom).addOnSuccessListener {
                                 moveToChattingRoom(opponent)
+                            }.addOnFailureListener {
+                                handleError(
+                                    context,
+                                    it,
+                                    "ChattingRoom Create Error",
+                                    "채팅방 생성 실패",
+                                    "채팅방 생성에 실패했습니다."
+                                )
                             }
                     }
                 }

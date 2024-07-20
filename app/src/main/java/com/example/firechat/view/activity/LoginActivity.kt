@@ -9,10 +9,10 @@ import android.widget.EditText
 import android.widget.ProgressBar
 import android.widget.RelativeLayout
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.viewModels
 import com.example.firechat.databinding.LoginActivityBinding
 import com.example.firechat.model.data.CurrentUserData
+import com.example.firechat.util.*
 import com.example.firechat.viewModel.AuthViewModel
 
 class LoginActivity : AppCompatActivity() {
@@ -56,20 +56,12 @@ class LoginActivity : AppCompatActivity() {
 
                     "login id/pw mismatch" -> {
                         statusText.text = "로그인"
-                        Toast.makeText(
-                            this,
-                            "아이디 혹은 비밀번호가 일치하지 않습니다.",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        showText(this, "아이디 혹은 비밀번호가 일치하지 않습니다.")
                     }
 
                     "login network error" -> {
                         statusText.text = "로그인"
-                        Toast.makeText(
-                            this,
-                            "네트워크 상태를 확인해 주세요",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        showText(this, "네트워크 상태를 확인해 주세요")
                     }
                 }
             }
@@ -140,13 +132,13 @@ class LoginActivity : AppCompatActivity() {
     private fun infoValidationCheck(email: String, pw: String): Boolean {
         if (email.isBlank()) {
             inputEmail.requestFocus()
-            Toast.makeText(this, "아이디가 입력되지 않았습니다.", Toast.LENGTH_SHORT).show()
+            showText(this, "아이디가 입력되지 않았습니다.")
             return false
         }
 
         if (pw.isBlank()) {
             inputPw.requestFocus()
-            Toast.makeText(this, "비밀번호가 입력되지 않았습니다.", Toast.LENGTH_SHORT).show()
+            showText(this, "비밀번호가 입력되지 않았습니다.")
             return false
         }
 

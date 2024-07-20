@@ -22,6 +22,7 @@ import com.example.firechat.model.data.ChattingState
 import com.example.firechat.model.data.CurrentUserData
 import com.example.firechat.model.data.Message
 import com.example.firechat.model.data.User
+import com.example.firechat.util.*
 import com.example.firechat.view.adapter.ChattingRoomRecyclerAdapter
 import com.example.firechat.view.adapter.DrawerUserListViewAdapter
 import com.example.firechat.view.adapter.LinearLayoutWrapper
@@ -162,7 +163,7 @@ class ChattingRoomActivity : AppCompatActivity() {
         userList.add(Pair("${CurrentUserData.userName!!} (나)", "${CurrentUserData.uid}"))
         userList.add(Pair(opponentUser.name!!, opponentUser.uid!!))
 
-        val adapter = DrawerUserListViewAdapter(userList)
+        val adapter = DrawerUserListViewAdapter(this, userList)
         drawerUserListView.adapter = adapter
     }
 
@@ -254,13 +255,22 @@ class ChattingRoomActivity : AppCompatActivity() {
     // 아닐경우는 false로 지정 후 DB에 저장
     private fun sendMessage() {
         if (messageInput.text.isNotEmpty()) {
-            val message = Message(uid, getTimeData(), messageInput.text.toString(), opponentUserOnlineState)
+            val message =
+                Message(uid, getTimeData(), messageInput.text.toString(), opponentUserOnlineState)
 
             db.getReference("ChattingRoom")
                 .child(chatRoomKey).child("messages")
                 .push().setValue(message)
                 .addOnSuccessListener {
                     messageInput.text.clear()
+                }.addOnFailureListener {
+                    handleError(
+                        this,
+                        it,
+                        "SendMessageError",
+                        "메시지 전송 실패",
+                        "메시지 전송에 실패했습니다. 다시 시도해주세요."
+                    )
                 }
         }
     }

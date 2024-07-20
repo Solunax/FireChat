@@ -6,10 +6,10 @@ import android.widget.EditText
 import android.widget.ProgressBar
 import android.widget.RelativeLayout
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import com.example.firechat.databinding.RegisterActivityBinding
+import com.example.firechat.util.*
 import com.example.firechat.viewModel.AuthViewModel
 
 class RegisterActivity : AppCompatActivity() {
@@ -42,44 +42,28 @@ class RegisterActivity : AppCompatActivity() {
                 when (code) {
                     "register success" -> {
                         statusText.text = "회원가입 성공"
-                        Toast.makeText(this, "회원가입에 성공했습니다.", Toast.LENGTH_SHORT).show()
+                        showText(this, "회원가입에 성공했습니다.")
                         finish()
                     }
 
                     "register weak password" -> {
                         statusText.text = "회원가입"
-                        Toast.makeText(
-                            this,
-                            "비밀번호 강도가 너무 약합니다.",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        showText(this, "비밀번호 강도가 너무 약합니다.")
                     }
 
                     "register email already use" -> {
                         statusText.text = "회원가입"
-                        Toast.makeText(
-                            this,
-                            "이미 사용중인 이메일 주소입니다.",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        showText(this, "이미 사용중인 이메일 주소입니다.")
                     }
 
                     "register invalid email" -> {
                         statusText.text = "회원가입"
-                        Toast.makeText(
-                            this,
-                            "이메일 주소 형식에 맞지 않습니다.",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        showText(this, "이메일 주소 형식에 맞지 않습니다.")
                     }
 
                     "register network error" -> {
                         statusText.text = "회원가입"
-                        Toast.makeText(
-                            this,
-                            "비밀번호 강도가 너무 약합니다.",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        showText(this, "비밀번호 강도가 너무 약합니다.")
                     }
                 }
             }
@@ -125,25 +109,25 @@ class RegisterActivity : AppCompatActivity() {
     private fun infoValidationCheck(name: String, email: String, pw: String): Boolean {
         if (name.isBlank()) {
             inputName.requestFocus()
-            Toast.makeText(this, "이름이 입력되지 않았습니다.", Toast.LENGTH_SHORT).show()
+            showText(this, "이름이 입력되지 않았습니다.")
             return false
         }
 
         if (email.isBlank()) {
             inputEmail.requestFocus()
-            Toast.makeText(this, "이메일이 입력되지 않았습니다.", Toast.LENGTH_SHORT).show()
+            showText(this, "이메일이 입력되지 않았습니다.")
             return false
         }
 
         if (pw.isBlank()) {
             inputPw.requestFocus()
-            Toast.makeText(this, "비밀번호가 입력되지 않았습니다.", Toast.LENGTH_SHORT).show()
+            showText(this, "비밀번호가 입력되지 않았습니다.")
             return false
         }
 
         if (pw.length < 6) {
             inputPw.requestFocus()
-            Toast.makeText(this, "비밀번호는 6글자 이상으로 설정하세요.", Toast.LENGTH_SHORT).show()
+            showText(this, "비밀번호는 6글자 이상으로 설정하세요.")
             return false
         }
 

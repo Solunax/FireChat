@@ -3,8 +3,9 @@ package com.example.firechat.model.repository
 import android.util.Log
 import com.example.firechat.model.data.CurrentUserData
 import com.example.firechat.model.data.User
-import com.example.firechat.viewModel.LoginResultCallBack
-import com.example.firechat.viewModel.RegisterResultCallback
+import com.example.firechat.viewModel.AuthError
+import com.example.firechat.viewModel.AuthResultCallback
+import com.example.firechat.viewModel.AuthSuccessResult
 import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
@@ -14,13 +15,14 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import java.lang.Exception
 
 class AuthRepository {
-    private val auth = FirebaseAuth.getInstance()
-    private val db = FirebaseDatabase.getInstance()
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val db: FirebaseDatabase = FirebaseDatabase.getInstance()
 
     // 로그인 메소드
-    fun tryLogin(id: String, pw: String, resultCallBack: LoginResultCallBack) {
+    fun tryLogin(id: String, pw: String, callback: AuthResultCallback) {
         auth.signInWithEmailAndPassword(id, pw)
             .addOnCompleteListener { task ->
                 // 로그인 시도 성공 여부에 따라 분기
@@ -34,7 +36,12 @@ class AuthRepository {
                                 CurrentUserData.userName = snapshot.child("name").value.toString()
 
                                 // 로그인 성공시 현재 유저의 uid와 함께 성공 코드를 반환
-                                resultCallBack.onLoginSuccess("login success", auth.currentUser!!.uid)
+                                callback.onSuccess(
+                                    AuthSuccessResult(
+                                        "login success",
+                                        auth.currentUser?.uid
+                                    )
+                                )
                             }
 
                             override fun onCancelled(error: DatabaseError) {
@@ -42,12 +49,7 @@ class AuthRepository {
                         })
                 } else {
                     // 로그인 실패시 발생한 문제에 따라서 에러 코드를 반환
-                    Log.d("Login Debug", "${task.exception?.message}")
-                    val error = when (task.exception) {
-                        is FirebaseNetworkException -> "login network error"
-                        else -> "login id/pw mismatch"
-                    }
-                    resultCallBack.onLoginFailed(error)
+                    callback.onFailure(getLoginError(task.exception))
                 }
             }
     }
@@ -57,7 +59,7 @@ class AuthRepository {
         name: String,
         email: String,
         pw: String,
-        registerResultCallback: RegisterResultCallback
+        callback: AuthResultCallback
     ) {
         auth.createUserWithEmailAndPassword(email, pw).addOnCompleteListener { task ->
             if (task.isSuccessful) {
@@ -68,23 +70,43 @@ class AuthRepository {
                 // 유저의 이름과 아이디(이메일)를 DB에 저장
                 // 경로는 DB -> User -> UID(고유 아이디)
                 db.getReference("User").child(uid).setValue(userData)
-
                 // 회원가입 성공시
-                registerResultCallback.returnRegisterResult("register success")
+                callback.onSuccess(AuthSuccessResult("register success"))
             } else {
                 // 회원가입 실패시 발생한 문제에 따라서 에러 코드를 반환
-                val error = when (task.exception) {
-                    is FirebaseAuthWeakPasswordException -> "register weak password"
-                    is FirebaseAuthUserCollisionException -> "register email already use"
-                    is FirebaseAuthInvalidCredentialsException -> "register invalid email"
-                    is FirebaseNetworkException -> "register network error"
-                    else -> {
-                        Log.d("Register Debug", "${task.exception?.message}")
-                        ""
-                    }
-                }
+                callback.onFailure(getRegisterError(task.exception))
+            }
+        }
+    }
 
-                registerResultCallback.returnRegisterResult(error)
+    private fun getLoginError(exception: Exception?): AuthError {
+        return when (exception) {
+            is FirebaseNetworkException -> AuthError("network error", "login network error")
+            else -> AuthError("invalid", "login id/pw mismatch")
+        }
+    }
+
+    private fun getRegisterError(exception: Exception?): AuthError {
+        return when (exception) {
+            is FirebaseAuthWeakPasswordException -> AuthError(
+                "weak_password",
+                "Password is too weak"
+            )
+
+            is FirebaseAuthUserCollisionException -> AuthError(
+                "email_already_in_use",
+                "Email is already in use"
+            )
+
+            is FirebaseAuthInvalidCredentialsException -> AuthError(
+                "invalid_email",
+                "Invalid email format"
+            )
+
+            is FirebaseNetworkException -> AuthError("network_error", "Network error occurred")
+            else -> {
+                Log.d("Register Debug", "${exception?.message}")
+                AuthError("unknown_error", "An unknown error occurred")
             }
         }
     }
