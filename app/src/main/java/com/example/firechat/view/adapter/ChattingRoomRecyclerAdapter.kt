@@ -20,10 +20,6 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.getValue
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
 import java.lang.StringBuilder
 
 class ChattingRoomRecyclerAdapter(
@@ -40,12 +36,12 @@ class ChattingRoomRecyclerAdapter(
     // areItemsTheSame은 두 객체가 동일객체인지 확인
     // areContentsTheSame은 두 아이템이 동일한 데이터를 가지는지 확인함
     // 비교 기준은 메세지의 고유한 Key값과 해당 메세지의 Contents(보낸 사람 UID, 보낸 시각, 내용, 확인 여부)
-    companion object DataComparator : DiffUtil.ItemCallback<Pair<String,Message>>() {
+    companion object DataComparator : DiffUtil.ItemCallback<Pair<String, Message>>() {
         override fun areItemsTheSame(
             oldItem: Pair<String, Message>,
             newItem: Pair<String, Message>
         ): Boolean {
-            return oldItem == newItem
+            return oldItem.first == newItem.first
         }
 
         override fun areContentsTheSame(
@@ -72,31 +68,32 @@ class ChattingRoomRecyclerAdapter(
                 // 채팅방에 입장시 최초 1회는 모든 값을 가져와 messageKey, allMessage 배열을 채움
                 // 최초 설정 이후 새로 추가된 값만 가져옴
                 override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
-                    CoroutineScope(Dispatchers.Main).launch {
-                        messageData[snapshot.key!!] = snapshot.getValue<Message>()!!
-                        messageKey = messageData.keys.toList()
-                        messageBody = messageData.values.toList()
+                    messageData[snapshot.key!!] = snapshot.getValue<Message>()!!
+                    messageKey = messageData.keys.toList()
+                    messageBody = messageData.values.toList()
 
-                        // 사용자가 가장 최근에 온 메세지를 확인할 수 있게 스크롤
-                        // Coroutine의 async와 await를 사용하여 리스트 갱신이 끝날때 까지 대기함
-                        // 리스트 갱신이 완전히 끝나면 마지막 메시지로 스크롤함
-                        CoroutineScope(Dispatchers.Main).async {
-                            submitList(messageData.toList())
-                        }.await()
-
+                    // 사용자가 가장 최근에 온 메세지를 확인할 수 있게 스크롤
+                    // Coroutine의 async와 await를 사용하여 리스트 갱신이 끝날때 까지 대기함
+                    // 리스트 갱신이 완전히 끝나면 마지막 메시지로 스크롤함
+                    submitList(messageData.toList()) {
                         recyclerView.scrollToPosition(itemCount - 1)
                     }
                 }
 
                 // 메세지 읽음 상태 변경시 호출됨
-                // 최초에 읽지 않은 상태에서 읽음 상태로 변경됐을 경우 호출
-                // snapshot으로 가져온 Message Key값으로
-                // 해당 인덱스 번호의 메세지 정보의 confirmed 값을 수정
+                // 메세지를 읽지 않음 상태에서 읽음 상태로 변경됐을 경우 호출
+                // snapshot으로 가져온 Message Key값으로 해당 메세지 정보의 confirmed 값을 수정
                 override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
-                    messageData[snapshot.key]!!.confirmed = true
-                    messageBody = messageData.values.toList()
+                    val newData = LinkedHashMap<String, Message>()
+                    messageData.forEach {
+                        newData[it.key] = it.value.copy()
+                    }
 
-                    submitList(messageData.toList())
+                    newData[snapshot.key]?.confirmed = true
+                    submitList(newData.toList()){
+                        messageData[snapshot.key]!!.confirmed = true
+                        messageBody = messageData.values.toList()
+                    }
                 }
 
                 // 유저가 메세지를 삭제할 때 호출됨
@@ -220,15 +217,18 @@ class ChattingRoomRecyclerAdapter(
                 readCheck.visibility = View.VISIBLE
             }
 
-            setReadState(adapterPosition)
+            setReadState(message, adapterPosition)
         }
 
         // 사용자가 메세지를 읽었다는 State 값을 변경하는 메소드
-        private fun setReadState(position: Int) {
+        private fun setReadState(message: Message, position: Int) {
             db.getReference("ChattingRoom")
                 .child(chattingRoomKey).child("messages")
                 .child(messageKey[position]).child("confirmed")
                 .setValue(true)
+
+            message.confirmed = true
+            readCheck.visibility = View.GONE
         }
     }
 
