@@ -230,6 +230,8 @@ class HomeActivity : AppCompatActivity() {
             withTimeout(10000) {
                 try {
                     // URI를 사용해 서버에 프로필 이미지를 업로드
+                    // await 메소드를 사용하여 실행 결과가 나올때 까지 대기함(서버 업로드)
+                    // 대기가 끝난 후(서버 업로드 완료/실패) 사용자에게 보여지는 LoadingDialog를 제거
                     profileReference.putFile(profileURI).addOnSuccessListener {
                         showText(context, "프로필 이미지 업로드를 성공했습니다.")
                         getProfileImage()
