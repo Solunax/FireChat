@@ -29,6 +29,7 @@ import com.example.firechat.view.adapter.LinearLayoutWrapper
 import com.example.firechat.view.dialog.LoadingDialog
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.getValue
@@ -62,6 +63,8 @@ class ChattingRoomActivity : AppCompatActivity() {
     private var finishCheck = true
     private var joinState = true
     private lateinit var messageRect: Rect
+    private lateinit var opponentListener: ValueEventListener
+    private lateinit var opponentRef: DatabaseReference
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -112,6 +115,10 @@ class ChattingRoomActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         backPressedCallback.isEnabled = false
+
+        if (::opponentRef.isInitialized && ::opponentListener.isInitialized) {
+            opponentRef.removeEventListener(opponentListener)
+        }
 
         if (finishCheck) {
             changeOnlineState(false)
@@ -188,23 +195,7 @@ class ChattingRoomActivity : AppCompatActivity() {
         // 만약 채팅방에서 나간다면 joinState를 false로 변경하고 앱의 홈 액티비티로 전환
         // activity가 종료 되면서 joinState는 DB에 저장됨
         quitButton.setOnClickListener {
-            AlertDialog.Builder(this)
-                .setTitle("채팅방 나가기")
-                .setMessage("채팅방에서 나가시겠습니까?")
-                .setPositiveButton("확인") { _, _ ->
-                    joinState = false
-                    changeOnlineState(false)
-
-                    // 이 시점에서 flag를 변경하는 이유는 flag가 true인 상태로 activity 종료시
-                    // 채팅방을 삭제하는 과정에서 onDestroy 콜백에 존재하는 채팅방 상태 변경 코드를
-                    // 실행하지 않기 위함(flag를 변경하지 않으면 삭제된 채팅방에 대한 상태 값(쓰레기 값)을 DB에 저장함)
-                    finishCheck = false
-                    chattingRoomAvailableCheck(chatRoomKey)
-                    finish()
-                }
-                .setNegativeButton("취소") { dialog, _ ->
-                    dialog.dismiss()
-                }.show()
+            showChattingRoomQuitDialog()
         }
     }
 
@@ -302,20 +293,42 @@ class ChattingRoomActivity : AppCompatActivity() {
 
     // 상대방이 현재 채팅방에 접속해있는지(채팅방 activity를 보는 상태인지) 상태 값을 메소드
     private fun getOpponentOnlineState() {
-        db.getReference("ChattingRoom")
-            .child(chatRoomKey).child("users")
-            .addValueEventListener(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    for (data in snapshot.children) {
-                        if (data.key == opponentUser.uid) {
-                            opponentUserOnlineState = data.getValue<ChattingState>()!!.onlineState
-                        }
+        opponentRef = db.getReference("ChattingRoom").child(chatRoomKey).child("users")
+
+        opponentListener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                for (data in snapshot.children) {
+                    if (data.key == opponentUser.uid) {
+                        opponentUserOnlineState = data.getValue<ChattingState>()!!.onlineState
                     }
                 }
+            }
 
-                override fun onCancelled(error: DatabaseError) {
-                }
-            })
+            override fun onCancelled(error: DatabaseError) {
+            }
+        }
+
+        opponentRef.addValueEventListener(opponentListener)
+    }
+
+    private fun showChattingRoomQuitDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("채팅방 나가기")
+            .setMessage("채팅방에서 나가시겠습니까?")
+            .setPositiveButton("확인") { _, _ ->
+                joinState = false
+                changeOnlineState(false)
+
+                // 이 시점에서 flag를 변경하는 이유는 flag가 true인 상태로 activity 종료시
+                // 채팅방을 삭제하는 과정에서 onDestroy 콜백에 존재하는 채팅방 상태 변경 코드를
+                // 실행하지 않기 위함(flag를 변경하지 않으면 삭제된 채팅방에 대한 상태 값(쓰레기 값)을 DB에 저장함)
+                finishCheck = false
+                chattingRoomAvailableCheck(chatRoomKey)
+                finish()
+            }
+            .setNegativeButton("취소") { dialog, _ ->
+                dialog.dismiss()
+            }.show()
     }
 
     // Message 클래스 구성시 필요한 현재 시간 정보를 변환하는 메소드
