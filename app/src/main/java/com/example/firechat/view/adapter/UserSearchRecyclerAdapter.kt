@@ -20,6 +20,7 @@ import com.example.firechat.view.activity.ChattingRoomActivity
 import com.example.firechat.view.dialog.LoadingDialog
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.getValue
@@ -32,6 +33,8 @@ class UserSearchRecyclerAdapter :
     private val db = FirebaseDatabase.getInstance()
     private lateinit var context: Context
     private lateinit var loadingDialog: LoadingDialog
+    private lateinit var userListRef: DatabaseReference
+    private lateinit var userListValueEventListener: ValueEventListener
 
     // 데이터 셋을 받아 차이를 계산
     // areItemsTheSame은 두 객체가 동일객체인지 확인
@@ -55,27 +58,29 @@ class UserSearchRecyclerAdapter :
     // 현재 DB에 존재하는 모든 사용자의 정보를 가져오는 메소드
     // 자기 자신은 제외하고 유저 목록 배열에 추가
     private fun setAllUser() {
-        db.getReference("User")
-            .addValueEventListener(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    allUserList.clear()
+        userListRef = db.getReference("User")
+        userListValueEventListener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                allUserList.clear()
 
-                    for (data in snapshot.children) {
-                        val item = data.getValue<User>()
+                for (data in snapshot.children) {
+                    val item = data.getValue<User>()
 
-                        if (item?.uid.equals(CurrentUserData.uid)) {
-                            continue
-                        }
-
-                        allUserList.add(item!!)
+                    if (item?.uid.equals(CurrentUserData.uid)) {
+                        continue
                     }
 
-                    submitList(allUserList)
+                    allUserList.add(item!!)
                 }
 
-                override fun onCancelled(error: DatabaseError) {
-                }
-            })
+                submitList(allUserList)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+            }
+        }
+
+        userListRef.addValueEventListener(userListValueEventListener)
     }
 
     // Activity에서 사용자 검색시 사용되는 메소드
@@ -83,8 +88,6 @@ class UserSearchRecyclerAdapter :
     // 사용자가 글자 입력 시, 사용자 정보 배열에서 해당 글자가 포함돼 있는지 확인 후
     // 해당 글자가 포함된 경우로 필터링하여 결과를 표시함
     fun searchName(name: String) {
-        submitList(null)
-
         if (name == "") {
             submitList(allUserList)
         } else {
@@ -129,7 +132,9 @@ class UserSearchRecyclerAdapter :
             ), null
         )
 
-        db.getReference("ChattingRoom").orderByChild("users/${CurrentUserData.uid!!}/joinState")
+        db.getReference("ChattingRoom")
+            .orderByChild("users/${CurrentUserData.uid!!}/joinState")
+            .equalTo(true)
             .addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     var validationCheck = false
@@ -185,6 +190,12 @@ class UserSearchRecyclerAdapter :
 
         context.startActivity(intent)
         (context as AppCompatActivity).finish()
+    }
+
+    fun detachDatabaseListener() {
+        if(::userListRef.isInitialized && ::userListValueEventListener.isInitialized) {
+            userListRef.removeEventListener(userListValueEventListener)
+        }
     }
 
     override fun getItemCount(): Int {

@@ -19,6 +19,7 @@ class NewChatActivity : AppCompatActivity() {
     private lateinit var backButton: ImageButton
     private lateinit var search: EditText
     private lateinit var userRecycler: RecyclerView
+    private lateinit var userSearchAdapter: UserSearchRecyclerAdapter
     private lateinit var uid: String
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,6 +39,7 @@ class NewChatActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         backPressedCallback.isEnabled = false
+        userSearchAdapter.detachDatabaseListener()
     }
 
     // 현재 사용자 정보를 가지고 있는 Singleton 객체에서 uid를 가져옴
@@ -76,9 +78,10 @@ class NewChatActivity : AppCompatActivity() {
     // 유저 리스트 리사이클러 뷰를 초기화하는 메소드
     private fun setRecycler() {
         userRecycler.layoutManager = LinearLayoutManager(this)
+        userSearchAdapter = UserSearchRecyclerAdapter()
         val decoration = DividerItemDecoration(applicationContext, DividerItemDecoration.VERTICAL)
         userRecycler.addItemDecoration(decoration)
-        userRecycler.adapter = UserSearchRecyclerAdapter()
+        userRecycler.adapter = userSearchAdapter
     }
 
     // 뒤로가기 버튼 클릭시 홈 화면으로 돌아감
