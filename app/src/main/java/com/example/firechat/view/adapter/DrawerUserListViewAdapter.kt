@@ -46,14 +46,14 @@ class DrawerUserListViewAdapter(
     }
 
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-        val binding = if (convertView == null) {
-            val tempBinding =
-                ChattingRoomDrawerListItemBinding.inflate(LayoutInflater.from(parent.context))
-            tempBinding.root.tag = tempBinding
-            tempBinding
+        val binding: ChattingRoomDrawerListItemBinding
+
+        if (convertView == null) {
+            binding = ChattingRoomDrawerListItemBinding.inflate(LayoutInflater.from(parent.context))
+            binding.root.tag = binding
         } else {
-            convertView.tag
-        } as ChattingRoomDrawerListItemBinding
+            binding = convertView.tag as ChattingRoomDrawerListItemBinding
+        }
 
         bind(binding, userList[position])
 
