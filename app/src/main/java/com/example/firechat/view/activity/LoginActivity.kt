@@ -23,7 +23,7 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var buttonBackground: RelativeLayout
     private lateinit var statusText: TextView
     private lateinit var register: TextView
-    private lateinit var sharePreference: SharedPreferences
+    private lateinit var sharedPreference: SharedPreferences
     private val viewModel: AuthViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,15 +39,15 @@ class LoginActivity : AppCompatActivity() {
     // Firebase auth를 로그인 사용해야 하기 때문에 인스턴스를 불러옴
     // sharedPreference로 마지막으로 성공한 로그인 유저의 ID와 PW를 자동으로 입력
     private fun initProperty() {
-        sharePreference = getSharedPreferences("loginData", MODE_PRIVATE)
+        sharedPreference = getSharedPreferences("loginData", MODE_PRIVATE)
 
         // ViewModel에서 로그인 시도시 결과에 따라 Event를 발생시킴
         // 아래의 observer는 해당 Event를 관측하고 그 내용에 따라 분기함
         // success면 홈화면으로, 그 외에는 오류 메세지를 사용자에게 표시
         viewModel.event.observe(this) { event ->
-            progressBar.visibility = View.INVISIBLE
-
             event.getContentIfNotHandled()?.let { code ->
+                progressBar.visibility = View.INVISIBLE
+
                 when (code) {
                     "login success" -> {
                         statusText.text = "로그인 성공"
@@ -79,8 +79,8 @@ class LoginActivity : AppCompatActivity() {
         buttonBackground = progressBarButtonBinding.progressBackground
         register = binding.textRegister
 
-        inputEmail.setText(sharePreference.getString("email", ""))
-        inputPw.setText(sharePreference.getString("pw", ""))
+        inputEmail.setText(sharedPreference.getString("email", ""))
+        inputPw.setText(sharedPreference.getString("pw", ""))
     }
 
     private fun initListener() {
@@ -112,11 +112,10 @@ class LoginActivity : AppCompatActivity() {
         // 해당 메소드가 실행된 것은 로그인이 성공적이였다는 의미
         // SharedPreference에 현재 사용자의 아이디와 패스워드를 저장
         // 추후에 Application 실행시 마지막으로 로그인한 정보를 자동으로 기입하기 위함
-        val editPreference = sharePreference.edit()
-
-        editPreference.putString("email", inputEmail.text.toString().trim())
-        editPreference.putString("pw", inputPw.text.toString().trim())
-        editPreference.apply()
+        sharedPreference.edit()
+            .putString("email", inputEmail.text.toString().trim())
+            .putString("pw", inputPw.text.toString().trim())
+            .apply()
 
         // Singleton 객체에 uid값 설정
         CurrentUserData.uid = viewModel.currentUserUID
