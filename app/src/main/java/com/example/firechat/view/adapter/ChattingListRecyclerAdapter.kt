@@ -25,12 +25,15 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.getValue
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
+
+private const val ONE_MINUTE_MILLIS = 60000L
+private const val ONE_HOUR_MILLIS = 3600000L
+private const val ONE_DAY_MILLIS = 86400000L
+private const val ONE_WEEK_MILLIS = 604800000L
+private const val ONE_MONTH_MILLIS = 2419200000L
+private const val ONE_YEAR_MILLIS = 31556952000L
 
 // ListAdapter를 사용하면 AsyncDiffer(스레드 처리)를 더 편하게 사용할 수 있음
 // submitList로 데이터를 갱신, currentList로 현재 데이터를 참조할 수 있음
@@ -49,7 +52,7 @@ class ChattingListRecyclerAdapter(private val context: Context) :
             oldItem: Pair<String, ChattingRoom>,
             newItem: Pair<String, ChattingRoom>
         ): Boolean {
-            return oldItem == newItem
+            return oldItem.first == newItem.first
         }
 
         // 채팅방 Key값 비교
@@ -57,7 +60,7 @@ class ChattingListRecyclerAdapter(private val context: Context) :
             oldItem: Pair<String, ChattingRoom>,
             newItem: Pair<String, ChattingRoom>
         ): Boolean {
-            return oldItem.first == newItem.first
+            return oldItem.second == newItem.second
         }
     }
 
@@ -103,16 +106,13 @@ class ChattingListRecyclerAdapter(private val context: Context) :
     // 정렬 기준 : 가장 마지막에 받은 메세지 시간기준으로 내림차순(최근순)
     // 채팅방만 생성되고 메세지를 받은적이 없다면 맨 뒤로 위치시킴
     fun sortData() {
-        CoroutineScope(Dispatchers.Main).launch {
-            submitList(null)
-            sortedList = dataList.toList()
-                .sortedWith(nullsLast(compareByDescending { getLastMessage(it.second)?.sendingDate }))
+        val tempList = dataList.toList()
+            .sortedWith(nullsLast(compareByDescending { getLastMessage(it.second)?.sendingDate }))
 
-            // adapter의 list 정렬 후 가장 위로 스크롤함
-            CoroutineScope(Dispatchers.Main).async {
-                submitList(sortedList)
-            }.await()
+        sortedList = tempList
 
+        // adapter의 list 정렬 후 가장 위로 스크롤함
+        submitList(sortedList){
             recyclerView.scrollToPosition(0)
         }
     }
@@ -222,14 +222,13 @@ class ChattingListRecyclerAdapter(private val context: Context) :
 
     // 해당 채팅방에서 마지막으로 전송된 메세지를 확인하여 반환하는 메소드
     private fun getLastMessage(chattingRoomData: ChattingRoom): Message? {
-        return chattingRoomData.messages!!.values.maxByOrNull { it.sendingDate }
+        return chattingRoomData.messages?.values?.maxByOrNull { it.sendingDate }
     }
 
     // 현재 사용자가 해당 채팅방에서 읽지 않은 메세지의 갯수를 확인하여 반환하는 메소드
     // filter 메소드를 사용하여 원하는 결과값(현재 사용자가 보낸 메세지가 아니면서 확인 안한 메세지)만 필터링함
     private fun getUnreadCount(uid: String, chattingRoomData: ChattingRoom): Int {
-        return chattingRoomData.messages!!
-            .filter { !it.value.confirmed && it.value.senderUid != uid }.size
+        return chattingRoomData.messages?.filter { !it.value.confirmed && it.value.senderUid != uid }?.size ?: 0
     }
 
     // 채팅방이 유효한지(참여한 유저가 존재하는지) 확인하는 메소드
@@ -272,38 +271,13 @@ class ChattingListRecyclerAdapter(private val context: Context) :
         val diffValue = currentTime - lastTime
 
         return when {
-            diffValue < 60000 -> {
-                "방금 전"
-            }
-
-            diffValue < 3600000 -> {
-                TimeUnit.MILLISECONDS.toMinutes(diffValue).toString() + "분 전"
-            }
-
-            diffValue < 86400000 -> {
-                TimeUnit.MILLISECONDS.toHours(diffValue).toString() + "시간 전"
-            }
-
-            diffValue < 604800000 -> {
-                TimeUnit.MILLISECONDS.toDays(diffValue).toString() + "일 전"
-            }
-
-            diffValue < 2419200000 -> {
-                TimeUnit.MILLISECONDS.toDays(diffValue / 7).toString() + "주 전"
-            }
-
-            diffValue < 31556952000 -> {
-                val days = TimeUnit.MILLISECONDS.toDays(diffValue / 30)
-                if (days == 0L) {
-                    "1 개월 전"
-                } else {
-                    TimeUnit.MILLISECONDS.toDays(diffValue / 30).toString() + "개월 전"
-                }
-            }
-
-            else -> {
-                TimeUnit.MILLISECONDS.toDays(diffValue / 365).toString() + "년 전"
-            }
+            diffValue < ONE_MINUTE_MILLIS -> "방금 전"
+            diffValue < ONE_HOUR_MILLIS -> "${TimeUnit.MILLISECONDS.toMinutes(diffValue)}분 전"
+            diffValue < ONE_DAY_MILLIS -> "${TimeUnit.MILLISECONDS.toHours(diffValue)}시간 전"
+            diffValue < ONE_WEEK_MILLIS -> "${TimeUnit.MILLISECONDS.toDays(diffValue)}일 전"
+            diffValue < ONE_MONTH_MILLIS -> "${TimeUnit.MILLISECONDS.toDays(diffValue / 7)}주 전"
+            diffValue < ONE_YEAR_MILLIS -> "${TimeUnit.MILLISECONDS.toDays(diffValue / 30)}개월 전"
+            else -> "${TimeUnit.MILLISECONDS.toDays(diffValue / 365)}년 전"
         }
     }
 }
