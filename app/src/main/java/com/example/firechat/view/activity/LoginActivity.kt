@@ -48,21 +48,23 @@ class LoginActivity : AppCompatActivity() {
             event.getContentIfNotHandled()?.let { code ->
                 progressBar.visibility = View.INVISIBLE
 
-                when (code) {
-                    "login success" -> {
-                        statusText.text = "로그인 성공"
-                        updateUI()
-                    }
+                val message = when (code) {
+                    "login success" -> "로그인 성공"
+                    "No account found with this email" -> "해당하는 아이디를 찾을 수 없습니다."
+                    "Invalid email or password" -> "아이디 혹은 비밀번호가 일치하지 않습니다."
+                    "Network error occurred" -> "네트워크 상태를 확인해 주세요"
+                    else -> "알 수 없는 오류로 인해 로그인 할 수 없습니다."
+                }
 
-                    "login id/pw mismatch" -> {
-                        statusText.text = "로그인"
-                        showText(this, "아이디 혹은 비밀번호가 일치하지 않습니다.")
-                    }
+                statusText.text = if (code == "login success") {
+                    "로그인 성공"
+                } else {
+                    showText(this, message)
+                    "로그인"
+                }
 
-                    "login network error" -> {
-                        statusText.text = "로그인"
-                        showText(this, "네트워크 상태를 확인해 주세요")
-                    }
+                if (code == "login success") {
+                    updateUI()
                 }
             }
         }

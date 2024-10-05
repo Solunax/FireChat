@@ -39,32 +39,27 @@ class RegisterActivity : AppCompatActivity() {
         viewModel.event.observe(this) { event ->
             progressBar.visibility = View.INVISIBLE
             event.getContentIfNotHandled()?.let { code ->
-                when (code) {
-                    "register success" -> {
-                        statusText.text = "회원가입 성공"
-                        showText(this, "회원가입에 성공했습니다.")
-                        finish()
-                    }
+                val message = when (code) {
+                    "register success" -> "회원가입에 성공했습니다."
+                    "Password is too weak" -> "비밀번호 강도가 너무 약합니다."
+                    "Email is already in use" -> "이미 사용중인 이메일 주소입니다."
+                    "Invalid email format" -> "이메일 주소 형식에 맞지 않습니다."
+                    "Too many attempts. Please try again later." -> "회원가입 시도 횟수가 너무 많습니다. 잠시 후 시도해주세요."
+                    "Error occurred while sending verification email" -> "확인 메일을 발송하는데 실패했습니다. 다시 시도해주세요."
+                    "Network error occurred" -> "네트워크 상태를 확인해 주세요"
+                    else -> "알 수 없는 오류가 발생했습니다. 관리자에게 문의해주세요."
+                }
 
-                    "register weak password" -> {
-                        statusText.text = "회원가입"
-                        showText(this, "비밀번호 강도가 너무 약합니다.")
-                    }
+                statusText.text = if (code == "register success") {
+                    "회원가입 성공"
+                } else {
+                    "회원가입"
+                }
 
-                    "register email already use" -> {
-                        statusText.text = "회원가입"
-                        showText(this, "이미 사용중인 이메일 주소입니다.")
-                    }
+                showText(this, message)
 
-                    "register invalid email" -> {
-                        statusText.text = "회원가입"
-                        showText(this, "이메일 주소 형식에 맞지 않습니다.")
-                    }
-
-                    "register network error" -> {
-                        statusText.text = "회원가입"
-                        showText(this, "비밀번호 강도가 너무 약합니다.")
-                    }
+                if (code == "register success") {
+                    finish()
                 }
             }
         }

@@ -7,8 +7,11 @@ import com.example.firechat.viewModel.AuthError
 import com.example.firechat.viewModel.AuthResultCallback
 import com.example.firechat.viewModel.AuthSuccessResult
 import com.google.firebase.FirebaseNetworkException
+import com.google.firebase.FirebaseTooManyRequestsException
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthEmailException
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 import com.google.firebase.database.DataSnapshot
@@ -63,8 +66,7 @@ class AuthRepository {
     ) {
         auth.createUserWithEmailAndPassword(email, pw).addOnCompleteListener { task ->
             if (task.isSuccessful) {
-                val user = auth.currentUser
-                val uid = user?.uid.toString()
+                val uid = auth.currentUser!!.uid
                 val userData = User(name, email, uid)
 
                 // 유저의 이름과 아이디(이메일)를 DB에 저장
@@ -81,8 +83,22 @@ class AuthRepository {
 
     private fun getLoginError(exception: Exception?): AuthError {
         return when (exception) {
-            is FirebaseNetworkException -> AuthError("network error", "login network error")
-            else -> AuthError("invalid", "login id/pw mismatch")
+            is FirebaseNetworkException -> AuthError("network_error", "Network error occurred")
+
+            is FirebaseAuthInvalidUserException -> AuthError(
+                "user_not_found",
+                "No account found with this email"
+            )
+
+            is FirebaseAuthInvalidCredentialsException -> AuthError(
+                "invalid_credentials",
+                "Invalid email or password"
+            )
+
+            else -> {
+                Log.e("Login Error Check", "${exception?.message}")
+                AuthError("unknown_error", "An unknown error occurred")
+            }
         }
     }
 
@@ -103,9 +119,20 @@ class AuthRepository {
                 "Invalid email format"
             )
 
+            is FirebaseTooManyRequestsException -> AuthError(
+                "too_many_requests",
+                "Too many attempts. Please try again later."
+            )
+
+            is FirebaseAuthEmailException -> AuthError(
+                "email_error",
+                "Error occurred while sending verification email"
+            )
+
             is FirebaseNetworkException -> AuthError("network_error", "Network error occurred")
+
             else -> {
-                Log.d("Register Debug", "${exception?.message}")
+                Log.e("Login Error Check", "${exception?.message}")
                 AuthError("unknown_error", "An unknown error occurred")
             }
         }
