@@ -119,6 +119,7 @@ class ChattingRoomActivity : AppCompatActivity() {
         if (::opponentRef.isInitialized && ::opponentListener.isInitialized) {
             opponentRef.removeEventListener(opponentListener)
         }
+        messageRecyclerView.adapter = null
 
         if (finishCheck) {
             changeOnlineState(false)

@@ -1,12 +1,11 @@
 package com.example.firechat.view.activity
 
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
 import android.widget.EditText
 import android.widget.ImageButton
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.widget.addTextChangedListener
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -40,6 +39,7 @@ class NewChatActivity : AppCompatActivity() {
         super.onDestroy()
         backPressedCallback.isEnabled = false
         userSearchAdapter.detachDatabaseListener()
+        userRecycler.adapter = null
     }
 
     // 현재 사용자 정보를 가지고 있는 Singleton 객체에서 uid를 가져옴
@@ -61,18 +61,10 @@ class NewChatActivity : AppCompatActivity() {
         // 사용자 검색창에서 입력에 따라 검색 결과를 표현하기 위한 리스너
         // 사용자가 이름을 입력한 후 현재 가입자 목록을 가진 리사이클러 뷰에서 이름을 검색함
         // 검색 결과중 사용자가 입력한 글자가 포함되는 사람의 목록을 표시
-        search.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
-            }
-
-            override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
-            }
-
-            override fun afterTextChanged(name: Editable?) {
-                val adapter = userRecycler.adapter as UserSearchRecyclerAdapter
-                adapter.searchName(name.toString())
-            }
-        })
+        search.addTextChangedListener { name ->
+            val adapter = userRecycler.adapter as UserSearchRecyclerAdapter
+            adapter.searchName(name.toString())
+        }
     }
 
     // 유저 리스트 리사이클러 뷰를 초기화하는 메소드

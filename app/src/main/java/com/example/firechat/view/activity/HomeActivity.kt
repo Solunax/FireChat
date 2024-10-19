@@ -80,6 +80,7 @@ class HomeActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         backPressedCallback.isEnabled = false
+        chattingRoomRecycler.adapter = null
     }
 
     // 현재 사용자 정보를 가지고 있는 Singleton 객체에서 uid를 가져옴
