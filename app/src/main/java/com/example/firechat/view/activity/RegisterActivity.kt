@@ -9,6 +9,7 @@ import android.widget.TextView
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import com.example.firechat.databinding.RegisterActivityBinding
+import com.example.firechat.model.enums.AuthState
 import com.example.firechat.util.*
 import com.example.firechat.viewModel.AuthViewModel
 
@@ -39,27 +40,20 @@ class RegisterActivity : AppCompatActivity() {
         viewModel.event.observe(this) { event ->
             progressBar.visibility = View.INVISIBLE
             event.getContentIfNotHandled()?.let { code ->
-                val message = when (code) {
-                    "register success" -> "회원가입에 성공했습니다."
-                    "Password is too weak" -> "비밀번호 강도가 너무 약합니다."
-                    "Email is already in use" -> "이미 사용중인 이메일 주소입니다."
-                    "Invalid email format" -> "이메일 주소 형식에 맞지 않습니다."
-                    "Too many attempts. Please try again later." -> "회원가입 시도 횟수가 너무 많습니다. 잠시 후 시도해주세요."
-                    "Error occurred while sending verification email" -> "확인 메일을 발송하는데 실패했습니다. 다시 시도해주세요."
-                    "Network error occurred" -> "네트워크 상태를 확인해 주세요"
-                    else -> "알 수 없는 오류가 발생했습니다. 관리자에게 문의해주세요."
+                when (code) {
+                    "register success" -> handleAuthState(AuthState.REGISTER_SUCCESS)
+                    "Password is too weak" -> handleAuthState(AuthState.WEAK_PASSWORD)
+                    "Email is already in use" -> handleAuthState(AuthState.EMAIL_IN_USE)
+                    "Invalid email format" -> handleAuthState(AuthState.INVALID_EMAIL_FORMAT)
+                    "Too many attempts" -> handleAuthState(AuthState.TOO_MANY_ATTEMPTS)
+                    "Network error occurred" -> handleAuthState(AuthState.NETWORK_ERROR)
+                    "An unknown error occurred" -> handleAuthState(AuthState.UNKNOWN_ERROR)
                 }
 
                 statusText.text = if (code == "register success") {
                     "회원가입 성공"
                 } else {
                     "회원가입"
-                }
-
-                showText(this, message)
-
-                if (code == "register success") {
-                    finish()
                 }
             }
         }
@@ -127,5 +121,16 @@ class RegisterActivity : AppCompatActivity() {
         }
 
         return true
+    }
+
+    // 회원가입시 발생한 이벤트를 다루기 위한 메소드
+    private fun handleAuthState(state: AuthState) {
+        statusText.text = state.statusText
+        showText(this, state.message)
+
+        // 성공 시에는 화면 종료
+        if (state == AuthState.REGISTER_SUCCESS) {
+            finish()
+        }
     }
 }
