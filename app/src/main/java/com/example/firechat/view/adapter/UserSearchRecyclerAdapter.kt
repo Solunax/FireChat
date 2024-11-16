@@ -134,9 +134,9 @@ class UserSearchRecyclerAdapter :
 
         db.getReference("ChattingRoom")
             .orderByChild("users/${CurrentUserData.uid!!}/joinState")
-            .equalTo(true)
             .addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
+                    var roomKey: String? = null
                     var validationCheck = false
 
                     for (data in snapshot.children) {
@@ -144,6 +144,8 @@ class UserSearchRecyclerAdapter :
 
                         if (userData.contains(CurrentUserData.uid!!) && userData.contains(opponent.uid)) {
                             validationCheck = true
+                            roomKey = data.key
+                            break
                         }
                     }
                     // 로딩이 완료되면 유효성 여부와 관계없이 로딩 다이얼로그를 제거함
@@ -155,7 +157,7 @@ class UserSearchRecyclerAdapter :
                             .setMessage("이미 해당 사용자와 대화한 채팅방이 있습니다. 이동하시겠습니까?")
                             .setPositiveButton("네") { _, _ ->
                                 // View Model의 로그아웃 메소드 호출 후 로그인 화면으로 돌아감
-                                moveToChattingRoom(opponent)
+                                moveToChattingRoom(opponent, roomKey!!)
                             }
                             .setNegativeButton("아니요") { dialog, _ ->
                                 dialog.dismiss()
@@ -163,7 +165,7 @@ class UserSearchRecyclerAdapter :
                     } else {
                         db.getReference("ChattingRoom").push()
                             .setValue(chatRoom).addOnSuccessListener {
-                                moveToChattingRoom(opponent)
+                                moveToChattingRoom(opponent, "")
                             }.addOnFailureListener {
                                 handleError(
                                     context,
@@ -183,17 +185,17 @@ class UserSearchRecyclerAdapter :
 
     // 채팅방 Activity를 시작하는 메소드
     // 채팅방 구성에 필요한 정보들을 담은 Intent로 Activity를 시작함
-    fun moveToChattingRoom(opponent: User) {
+    fun moveToChattingRoom(opponent: User, roomKey: String) {
         val intent = Intent(context, ChattingRoomActivity::class.java)
         intent.putExtra("opponent", opponent)
-        intent.putExtra("chatRoomKey", "")
+        intent.putExtra("chatRoomKey", roomKey)
 
         context.startActivity(intent)
         (context as AppCompatActivity).finish()
     }
 
     fun detachDatabaseListener() {
-        if(::userListRef.isInitialized && ::userListValueEventListener.isInitialized) {
+        if (::userListRef.isInitialized && ::userListValueEventListener.isInitialized) {
             userListRef.removeEventListener(userListValueEventListener)
         }
     }
