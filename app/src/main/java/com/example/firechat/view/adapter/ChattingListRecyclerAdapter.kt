@@ -25,15 +25,12 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.getValue
-import java.util.Calendar
-import java.util.concurrent.TimeUnit
+import java.time.Duration
+import java.time.LocalDateTime
 
 private const val ONE_MINUTE_MILLIS = 60000L
 private const val ONE_HOUR_MILLIS = 3600000L
 private const val ONE_DAY_MILLIS = 86400000L
-private const val ONE_WEEK_MILLIS = 604800000L
-private const val ONE_MONTH_MILLIS = 2419200000L
-private const val ONE_YEAR_MILLIS = 31556952000L
 
 // ListAdapter를 사용하면 AsyncDiffer(스레드 처리)를 더 편하게 사용할 수 있음
 // submitList로 데이터를 갱신, currentList로 현재 데이터를 참조할 수 있음
@@ -106,13 +103,14 @@ class ChattingListRecyclerAdapter(private val context: Context) :
     // 정렬 기준 : 가장 마지막에 받은 메세지 시간기준으로 내림차순(최근순)
     // 채팅방만 생성되고 메세지를 받은적이 없다면 맨 뒤로 위치시킴
     fun sortData() {
+        submitList(null)
         val tempList = dataList.toList()
             .sortedWith(nullsLast(compareByDescending { getLastMessage(it.second)?.sendingDate }))
 
         sortedList = tempList
 
         // adapter의 list 정렬 후 가장 위로 스크롤함
-        submitList(sortedList){
+        submitList(sortedList) {
             recyclerView.scrollToPosition(0)
         }
     }
@@ -228,7 +226,8 @@ class ChattingListRecyclerAdapter(private val context: Context) :
     // 현재 사용자가 해당 채팅방에서 읽지 않은 메세지의 갯수를 확인하여 반환하는 메소드
     // filter 메소드를 사용하여 원하는 결과값(현재 사용자가 보낸 메세지가 아니면서 확인 안한 메세지)만 필터링함
     private fun getUnreadCount(uid: String, chattingRoomData: ChattingRoom): Int {
-        return chattingRoomData.messages?.filter { !it.value.confirmed && it.value.senderUid != uid }?.size ?: 0
+        return chattingRoomData.messages?.filter { !it.value.confirmed && it.value.senderUid != uid }?.size
+            ?: 0
     }
 
     // 채팅방이 유효한지(참여한 유저가 존재하는지) 확인하는 메소드
@@ -264,20 +263,21 @@ class ChattingListRecyclerAdapter(private val context: Context) :
     private fun getLastMessageTimeString(lastTimeString: String): String {
         //마지막 메세지가 전송된 시각 구하기
         val lastTimeData = ChattingRoomTimeData(lastTimeString)
-        val currentTime = Calendar.getInstance().timeInMillis
-        val lastTime = Calendar.getInstance().apply { time = lastTimeData.dateTime }.timeInMillis
+        val currentTime = LocalDateTime.now()
+        val lastTime = lastTimeData.dateTime
 
         //현 시각과 마지막 메세지 시각과의 차이. 월,일,시,분
-        val diffValue = currentTime - lastTime
+        val duration = Duration.between(lastTime, currentTime)
+        val diffValue = duration.toMillis()
 
         return when {
             diffValue < ONE_MINUTE_MILLIS -> "방금 전"
-            diffValue < ONE_HOUR_MILLIS -> "${TimeUnit.MILLISECONDS.toMinutes(diffValue)}분 전"
-            diffValue < ONE_DAY_MILLIS -> "${TimeUnit.MILLISECONDS.toHours(diffValue)}시간 전"
-            diffValue < ONE_WEEK_MILLIS -> "${TimeUnit.MILLISECONDS.toDays(diffValue)}일 전"
-            diffValue < ONE_MONTH_MILLIS -> "${TimeUnit.MILLISECONDS.toDays(diffValue / 7)}주 전"
-            diffValue < ONE_YEAR_MILLIS -> "${TimeUnit.MILLISECONDS.toDays(diffValue / 30)}개월 전"
-            else -> "${TimeUnit.MILLISECONDS.toDays(diffValue / 365)}년 전"
+            diffValue < ONE_HOUR_MILLIS -> "${duration.toMinutes()}분 전"
+            diffValue < ONE_DAY_MILLIS -> "${duration.toHours()}시간 전"
+            duration.toDays() < 7 -> "${duration.toDays()}일 전"
+            duration.toDays() < 30 -> "${duration.toDays() / 7}주 전"
+            duration.toDays() < 365 -> "${duration.toDays() / 30}개월 전"
+            else -> "${duration.toDays() / 365}년 전"
         }
     }
 }
