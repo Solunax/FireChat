@@ -12,6 +12,7 @@ import android.widget.TextView
 import androidx.activity.viewModels
 import com.example.firechat.databinding.LoginActivityBinding
 import com.example.firechat.model.data.CurrentUserData
+import com.example.firechat.model.enums.AuthState
 import com.example.firechat.util.*
 import com.example.firechat.viewModel.AuthViewModel
 
@@ -48,23 +49,12 @@ class LoginActivity : AppCompatActivity() {
             event.getContentIfNotHandled()?.let { code ->
                 progressBar.visibility = View.INVISIBLE
 
-                val message = when (code) {
-                    "login success" -> "로그인 성공"
-                    "No account found with this email" -> "해당하는 아이디를 찾을 수 없습니다."
-                    "Invalid email or password" -> "아이디 혹은 비밀번호가 일치하지 않습니다."
-                    "Network error occurred" -> "네트워크 상태를 확인해 주세요"
-                    else -> "알 수 없는 오류로 인해 로그인 할 수 없습니다."
-                }
-
-                statusText.text = if (code == "login success") {
-                    "로그인 성공"
-                } else {
-                    showText(this, message)
-                    "로그인"
-                }
-
-                if (code == "login success") {
-                    updateUI()
+                when (code) {
+                    "login success" -> handleAuthState(AuthState.LOGIN_SUCCESS)
+                    "No account found with this email" -> handleAuthState(AuthState.LOGIN_NO_ACCOUNT)
+                    "Invalid email or password" -> handleAuthState(AuthState.LOGIN_INVALID_INFORMATION)
+                    "Network error occurred" -> handleAuthState(AuthState.LOGIN_NETWORK_ERROR)
+                    else -> handleAuthState(AuthState.LOGIN_UNKNOWN_ERROR)
                 }
             }
         }
@@ -144,5 +134,15 @@ class LoginActivity : AppCompatActivity() {
         }
 
         return true
+    }
+
+    private fun handleAuthState(state: AuthState) {
+        statusText.text = state.statusText
+        showText(this, state.message)
+
+        // 성공 시에는 화면 종료
+        if (state == AuthState.LOGIN_SUCCESS) {
+            updateUI()
+        }
     }
 }

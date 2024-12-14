@@ -42,12 +42,12 @@ class RegisterActivity : AppCompatActivity() {
             event.getContentIfNotHandled()?.let { code ->
                 when (code) {
                     "register success" -> handleAuthState(AuthState.REGISTER_SUCCESS)
-                    "Password is too weak" -> handleAuthState(AuthState.WEAK_PASSWORD)
-                    "Email is already in use" -> handleAuthState(AuthState.EMAIL_IN_USE)
-                    "Invalid email format" -> handleAuthState(AuthState.INVALID_EMAIL_FORMAT)
-                    "Too many attempts" -> handleAuthState(AuthState.TOO_MANY_ATTEMPTS)
-                    "Network error occurred" -> handleAuthState(AuthState.NETWORK_ERROR)
-                    "An unknown error occurred" -> handleAuthState(AuthState.UNKNOWN_ERROR)
+                    "Password is too weak" -> handleAuthState(AuthState.REGISTER_WEAK_PASSWORD)
+                    "Email is already in use" -> handleAuthState(AuthState.REGISTER_EMAIL_IN_USE)
+                    "Invalid email format" -> handleAuthState(AuthState.REGISTER_INVALID_EMAIL_FORMAT)
+                    "Too many attempts" -> handleAuthState(AuthState.REGISTER_TOO_MANY_ATTEMPTS)
+                    "Network error occurred" -> handleAuthState(AuthState.REGISTER_NETWORK_ERROR)
+                    "An unknown error occurred" -> handleAuthState(AuthState.REGISTER_UNKNOWN_ERROR)
                 }
 
                 statusText.text = if (code == "register success") {
