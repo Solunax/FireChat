@@ -20,10 +20,10 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import java.lang.Exception
 
-class AuthRepository {
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+class AuthRepository(
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
     private val db: FirebaseDatabase = FirebaseDatabase.getInstance()
-
+) {
     // 로그인 메소드
     fun tryLogin(id: String, pw: String, callback: AuthResultCallback) {
         auth.signInWithEmailAndPassword(id, pw)
@@ -52,7 +52,7 @@ class AuthRepository {
                         })
                 } else {
                     // 로그인 실패시 발생한 문제에 따라서 에러 코드를 반환
-                    callback.onFailure(getLoginError(task.exception))
+                    callback.onFailure(getError(task.exception))
                 }
             }
     }
@@ -76,34 +76,16 @@ class AuthRepository {
                 callback.onSuccess(AuthSuccessResult("register success"))
             } else {
                 // 회원가입 실패시 발생한 문제에 따라서 에러 코드를 반환
-                callback.onFailure(getRegisterError(task.exception))
+                callback.onFailure(getError(task.exception))
             }
         }
     }
 
-    private fun getLoginError(exception: Exception?): AuthError {
+    // 로그인, 회원가입 시도 중 Exception 발생시 Error 객체를 생성하는 메소드
+    private fun getError(exception: Exception?): AuthError {
         return when (exception) {
             is FirebaseNetworkException -> AuthError("network_error", "Network error occurred")
 
-            is FirebaseAuthInvalidUserException -> AuthError(
-                "user_not_found",
-                "No account found with this email"
-            )
-
-            is FirebaseAuthInvalidCredentialsException -> AuthError(
-                "invalid_credentials",
-                "Invalid email or password"
-            )
-
-            else -> {
-                Log.e("Login Error Check", "${exception?.message}")
-                AuthError("unknown_error", "An unknown error occurred")
-            }
-        }
-    }
-
-    private fun getRegisterError(exception: Exception?): AuthError {
-        return when (exception) {
             is FirebaseAuthWeakPasswordException -> AuthError(
                 "weak_password",
                 "Password is too weak"
@@ -129,7 +111,10 @@ class AuthRepository {
                 "Error occurred while sending verification email"
             )
 
-            is FirebaseNetworkException -> AuthError("network_error", "Network error occurred")
+            is FirebaseAuthInvalidUserException -> AuthError(
+                "user_not_found",
+                "No account found with this email"
+            )
 
             else -> {
                 Log.e("Login Error Check", "${exception?.message}")
