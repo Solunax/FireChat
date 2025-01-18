@@ -11,7 +11,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.example.firechat.databinding.RegisterActivityBinding
 import com.example.firechat.model.enums.AuthState
 import com.example.firechat.util.*
-import com.example.firechat.viewModel.AuthViewModel
+import com.example.firechat.viewModel.ViewModel
 
 class RegisterActivity : AppCompatActivity() {
     private lateinit var binding: RegisterActivityBinding
@@ -21,7 +21,7 @@ class RegisterActivity : AppCompatActivity() {
     private lateinit var progressBar: ProgressBar
     private lateinit var buttonBackground: RelativeLayout
     private lateinit var statusText: TextView
-    private val viewModel: AuthViewModel by viewModels()
+    private val viewModel: ViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

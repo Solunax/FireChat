@@ -1,9 +1,6 @@
 package com.example.firechat.view.activity
 
-import android.content.Context
 import android.content.Intent
-import android.graphics.drawable.Drawable
-import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
 import android.widget.ImageButton
@@ -18,12 +15,7 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.bumptech.glide.load.DataSource
-import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.bumptech.glide.load.engine.GlideException
-import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.RequestOptions
-import com.bumptech.glide.request.target.Target
 import com.example.firechat.R
 import com.example.firechat.databinding.HomeActivityBinding
 import com.example.firechat.databinding.HomeNavigationBinding
@@ -32,14 +24,7 @@ import com.example.firechat.service.TaskRemoveService
 import com.example.firechat.util.*
 import com.example.firechat.view.adapter.ChattingListRecyclerAdapter
 import com.example.firechat.view.dialog.LoadingDialog
-import com.example.firechat.viewModel.AuthViewModel
-import com.google.firebase.storage.FirebaseStorage
-import com.google.firebase.storage.StorageReference
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.withTimeout
+import com.example.firechat.viewModel.ViewModel
 
 class HomeActivity : AppCompatActivity() {
     private lateinit var binding: HomeActivityBinding
@@ -52,12 +37,8 @@ class HomeActivity : AppCompatActivity() {
     lateinit var chattingRoomRecycler: RecyclerView
     private lateinit var loadingDialog: LoadingDialog
 
-    private lateinit var uid: String
-    private lateinit var profileURI: Uri
-    private lateinit var firebaseStorage: FirebaseStorage
-    private lateinit var profileReference: StorageReference
     private var lastBackPressedTime = 0L
-    private val viewModel: AuthViewModel by viewModels()
+    private val viewModel: ViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,6 +49,8 @@ class HomeActivity : AppCompatActivity() {
         initView()
         initListener()
         setRecycler()
+
+        viewModel.getProfileImage()
 
         // 뒤로가기 버튼 클릭 콜백 연결
         onBackPressedDispatcher.addCallback(this, backPressedCallback)
@@ -83,14 +66,26 @@ class HomeActivity : AppCompatActivity() {
         chattingRoomRecycler.adapter = null
     }
 
-    // 현재 사용자 정보를 가지고 있는 Singleton 객체에서 uid를 가져옴
-    // 사용자의 uid/profile.jpg로 FireStorage 파일 경로 지정
     private fun initProperty() {
-        uid = CurrentUserData.uid!!
-        firebaseStorage = FirebaseStorage.getInstance()
-        firebaseStorage.maxDownloadRetryTimeMillis = 10000
-        firebaseStorage.maxUploadRetryTimeMillis = 10000
-        profileReference = firebaseStorage.getReference("$uid/profile.jpg")
+        // 프로필 이미지 신규 등록 / 갱신시 사용되는 observer
+        viewModel.profileImageUri.observe(this) { uri ->
+            if (uri != null) {
+                // 프로필 이미지가 변경되면 드로어 프로필 이미지 영역에 이미지 갱신
+                Glide.with(this)
+                    .load(uri)
+                    .placeholder(R.drawable.baseline_person_24)
+                    .apply(RequestOptions().circleCrop())
+                    .into(drawerProfile)
+            }
+            loadingDialog.dismiss()
+        }
+
+        // 프로필 이미지 로드 실패시 사용되는 observer
+        viewModel.event.observe(this) { event ->
+            event.getContentIfNotHandled()?.let { message ->
+                showText(this, message)
+            }
+        }
     }
 
     private fun initView() {
@@ -108,7 +103,6 @@ class HomeActivity : AppCompatActivity() {
         drawerProfile = drawer.homeDrawerProfileImage
         drawer.homeDrawerId.text = CurrentUserData.userName
         drawer.homeDrawerEmail.text = CurrentUserData.email
-        getProfileImage()
     }
 
     private fun initListener() {
@@ -142,8 +136,10 @@ class HomeActivity : AppCompatActivity() {
             when (result.resultCode) {
                 RESULT_OK -> {
                     loadingDialog.show()
-                    profileURI = result.data?.data!!
-                    uploadProfileImage(this)
+                    val uri = result.data?.data
+                    if (uri != null) {
+                        viewModel.uploadProfileImage(uri)
+                    }
                 }
             }
         }
@@ -178,83 +174,6 @@ class HomeActivity : AppCompatActivity() {
             .setNegativeButton("취소") { dialog, _ ->
                 dialog.dismiss()
             }.show()
-    }
-
-    // 드로어에 현재 유저의 프로필 이미지를 불러오는 메소드
-    // 이미지를 원형으로 잘라서(RequestOptions().circleCrop()) 삽입
-    private fun getProfileImage() {
-        Glide.with(this)
-            .load(profileReference)
-            .timeout(10000)
-            .diskCacheStrategy(DiskCacheStrategy.NONE)
-            .skipMemoryCache(true)
-            .placeholder(R.drawable.baseline_person_24)
-            .apply(RequestOptions().circleCrop())
-            .listener(object : RequestListener<Drawable> {
-                override fun onLoadFailed(
-                    e: GlideException?,
-                    model: Any?,
-                    target: Target<Drawable>?,
-                    isFirstResource: Boolean
-                ): Boolean {
-                    if (e?.message != null) {
-                        if (!e.message!!.contains("Object does not exist at location.")) {
-                            handleError(
-                                this@HomeActivity,
-                                e,
-                                "Profile Image Error",
-                                "프로필 이미지 에러",
-                                "프로필 이미지 관련 에러"
-                            )
-                        }
-                    }
-
-                    return false
-                }
-
-                override fun onResourceReady(
-                    resource: Drawable?,
-                    model: Any?,
-                    target: Target<Drawable>?,
-                    dataSource: DataSource?,
-                    isFirstResource: Boolean
-                ): Boolean {
-                    return false
-                }
-            })
-            .into(drawerProfile)
-    }
-
-    // 새로운 프로필 이미지를 업로드하는 메소드
-    private fun uploadProfileImage(context: Context) {
-        CoroutineScope(Dispatchers.IO).launch {
-            withTimeout(10000) {
-                try {
-                    // URI를 사용해 서버에 프로필 이미지를 업로드
-                    // await 메소드를 사용하여 실행 결과가 나올때 까지 대기함(서버 업로드)
-                    // 대기가 끝난 후(서버 업로드 완료/실패) 사용자에게 보여지는 LoadingDialog를 제거
-                    profileReference.putFile(profileURI).addOnSuccessListener {
-                        showText(context, "프로필 이미지 업로드를 성공했습니다.")
-                        getProfileImage()
-                    }.addOnFailureListener {
-                        runOnUiThread {
-                            handleError(
-                                context,
-                                it,
-                                "Uploading Profile Image Error",
-                                "프로필 이미지 업로드 에러",
-                                "프로필 이미지 업로드를 실패했습니다."
-                            )
-                        }
-                    }.await()
-                } catch (_: Exception) {
-                } finally {
-                    runOnUiThread {
-                        loadingDialog.dismiss()
-                    }
-                }
-            }
-        }
     }
 
     // 뒤로가기 버튼을 두번 클릭시 앱을 종료하는 기능을 수행하는 콜백

@@ -14,7 +14,7 @@ import com.example.firechat.databinding.LoginActivityBinding
 import com.example.firechat.model.data.CurrentUserData
 import com.example.firechat.model.enums.AuthState
 import com.example.firechat.util.*
-import com.example.firechat.viewModel.AuthViewModel
+import com.example.firechat.viewModel.ViewModel
 
 class LoginActivity : AppCompatActivity() {
     private lateinit var binding: LoginActivityBinding
@@ -25,7 +25,7 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var statusText: TextView
     private lateinit var register: TextView
     private lateinit var sharedPreference: SharedPreferences
-    private val viewModel: AuthViewModel by viewModels()
+    private val viewModel: ViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
