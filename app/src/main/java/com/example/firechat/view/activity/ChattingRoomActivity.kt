@@ -11,6 +11,7 @@ import android.widget.ImageButton
 import android.widget.ListView
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -27,16 +28,7 @@ import com.example.firechat.view.adapter.ChattingRoomRecyclerAdapter
 import com.example.firechat.view.adapter.DrawerUserListViewAdapter
 import com.example.firechat.view.adapter.LinearLayoutWrapper
 import com.example.firechat.view.dialog.LoadingDialog
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
-import com.google.firebase.database.getValue
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
+import com.example.firechat.viewModel.ChattingViewModel
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.TimeZone
@@ -57,56 +49,27 @@ class ChattingRoomActivity : AppCompatActivity() {
     private lateinit var chatRoomKey: String
     private lateinit var inputMethodManager: InputMethodManager
     private lateinit var loadingDialog: LoadingDialog
-    private var opponentUserOnlineState = false
     lateinit var messageRecyclerView: RecyclerView
-    private val db = FirebaseDatabase.getInstance()
+    private lateinit var messageRect: Rect
+    private val viewModel: ChattingViewModel by viewModels()
     private var finishCheck = true
     private var joinState = true
-    private lateinit var messageRect: Rect
-    private lateinit var opponentListener: ValueEventListener
-    private lateinit var opponentRef: DatabaseReference
+    private var recyclerInitialize = false
+    private var opponentUserOnlineState = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ChattingRoomActivityBinding.inflate(layoutInflater)
-        loadingDialog = LoadingDialog(this)
         setContentView(binding.root)
 
+        loadingDialog = LoadingDialog(this)
         loadingDialog.show()
         initProperty()
         initView()
         initListener()
-
-        CoroutineScope(Dispatchers.Main).launch {
-            setChattingRoom()
-        }
+        setChattingRoom()
 
         onBackPressedDispatcher.addCallback(this, backPressedCallback)
-    }
-
-    // 소프트 키보드가 활성화된 상태에서 다른곳 터치시 소프트 키보드를 비활성화함
-    override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
-        if (ev?.action == MotionEvent.ACTION_DOWN) {
-            // 사용자가 터치시 터치한 View의 포커스가 messageInput(EditText) 이면 코드 실행
-            if (currentFocus == messageInput) {
-                // messageRect가 초기화된 상태가 아니면(최초 1회)
-                // 소프트 키보드가 활성화 된 상태에서
-                // 메세지 입력하는 EditText + 전송 버튼을 포함한 Constraint Bottom 의 위치값(x, y)을 저장
-                if (!::messageRect.isInitialized) {
-                    messageRect = Rect()
-                    binding.constraintBottom.getGlobalVisibleRect(messageRect)
-                }
-
-                // 소프트 키보드가 활성화된 상태에서의 ConstraintBottom 좌표를 바탕으로
-                // 터치 이벤트가 발생한 지점이 해당 레이아웃 밖이면 소프트 키보드를 숨기고, EditText의 포커스를 제거
-                if (!messageRect.contains(ev.x.toInt(), ev.y.toInt())) {
-                    inputMethodManager.hideSoftInputFromWindow(this.currentFocus?.windowToken, 0)
-                    messageInput.clearFocus()
-                }
-            }
-        }
-
-        return super.dispatchTouchEvent(ev)
     }
 
     // 메모리 누수 방지를 위해 Destroy 시 콜백을 비활성화
@@ -116,9 +79,7 @@ class ChattingRoomActivity : AppCompatActivity() {
         super.onDestroy()
         backPressedCallback.isEnabled = false
 
-        if (::opponentRef.isInitialized && ::opponentListener.isInitialized) {
-            opponentRef.removeEventListener(opponentListener)
-        }
+        viewModel.removeListener()
         messageRecyclerView.adapter = null
 
         if (finishCheck) {
@@ -140,6 +101,16 @@ class ChattingRoomActivity : AppCompatActivity() {
             intent.getSerializableExtra("opponent") as User
         }
 
+        viewModel.opponentOnlineState.observe(this) { state ->
+            opponentUserOnlineState = state
+        }
+
+        viewModel.chatRoomKey.observe(this) { key ->
+            chatRoomKey = key
+            setRecycler()
+        }
+
+        viewModel.getOpponentUserOnlineState(chatRoomKey, opponentUser.uid!!)
         inputMethodManager = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
     }
 
@@ -200,62 +171,17 @@ class ChattingRoomActivity : AppCompatActivity() {
         }
     }
 
-    // 채팅방 초기화 메소드
-    // 새로만들어진 채팅방이면 이전 Activity에서 Key값을 받지 못했기때문에
-    // 서버에 저장된 Key값을 가져옴
-    // 그게 아니라면 Key값을 바탕으로 리사이클러뷰(채팅 내역)을 구성함
-    private suspend fun setChattingRoom() {
-        CoroutineScope(Dispatchers.IO).async {
-            if (chatRoomKey.isBlank()) {
-                setChatRoomKey()
-            } else {
-                setRecycler()
-            }
-        }.await()
-
-        loadingDialog.dismiss()
-    }
-
-    // 새로 만들어진 채팅방의 경우 실행되는 메소드
-    // 채팅 목록을 가져온 뒤, 현재 사용자와 원하는 상대방으로 구성된 채팅방 Key를 찾음
-    // 찾은 후 그 Key를 바탕으로 리사이클러 뷰(채팅방)을 구성함
-    private fun setChatRoomKey() {
-        db.getReference("ChattingRoom")
-            .orderByChild("users/${opponentUser.uid}/joinState").equalTo(true)
-            .addListenerForSingleValueEvent(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    for (data in snapshot.children) {
-                        val userData = data.child("users").value.toString()
-                        if (userData.contains(uid) && userData.contains(opponentUser.uid.toString())) {
-                            chatRoomKey = data.key!!
-                            setRecycler()
-                            break
-                        }
-                    }
-                }
-
-                override fun onCancelled(error: DatabaseError) {
-                }
-            })
-    }
-
     // 메세지 보내기 메소드
-    // 사용자가 입력한 채팅을 Message 클래스 형식에 맞게 생성하여 서버에 저장함
-    // Message의 형식은 UID, 현재 시간 정보, 메세지 내용, 읽은 상태로 구성됨
-    // 읽은 상태는 현재 상대방이 채팅방 접속 상태에 따라 결정함
-    // 예를들어, 상대가 채팅방에 접속한 상태라면 Message 인스턴스의 confirmed 값은 true로
-    // 아닐경우는 false로 지정 후 DB에 저장
     private fun sendMessage() {
         if (messageInput.text.isNotEmpty()) {
             val message =
                 Message(uid, getTimeData(), messageInput.text.toString(), opponentUserOnlineState)
 
-            db.getReference("ChattingRoom")
-                .child(chatRoomKey).child("messages")
-                .push().setValue(message)
-                .addOnSuccessListener {
-                    messageInput.text.clear()
-                }.addOnFailureListener {
+            viewModel.sendMessage(
+                chatRoomKey,
+                message,
+                onSuccess = { messageInput.text.clear() },
+                onFailure = {
                     handleError(
                         this,
                         it,
@@ -264,16 +190,26 @@ class ChattingRoomActivity : AppCompatActivity() {
                         "메시지 전송에 실패했습니다. 다시 시도해주세요."
                     )
                 }
+            )
+        }
+    }
+
+    private fun setChattingRoom() {
+        if (chatRoomKey.isBlank()) {
+            viewModel.setChattingRoomKey(uid, opponentUser.uid!!)
+        } else {
+            setRecycler()
         }
     }
 
     // 리사이클러 뷰에 어댑터를 할당하는 메소드
     // 이 시점에서 사용자가 채팅방을 보는 상태라는 것을 DB에 저장(changeOnlineState - state = true)
     private fun setRecycler() {
-        runOnUiThread {
+        if (!recyclerInitialize) {
+            recyclerInitialize = true
+
             messageRecyclerView.layoutManager = LinearLayoutWrapper(this)
             messageRecyclerView.adapter = ChattingRoomRecyclerAdapter(this, chatRoomKey)
-            getOpponentOnlineState()
             changeOnlineState(true)
 
             // 소프트 키보드 사용시 리사이클러 뷰의 마지막 항목을 표시하는 기능을 수행
@@ -288,28 +224,9 @@ class ChattingRoomActivity : AppCompatActivity() {
                     }
                 }
             }
+
+            loadingDialog.dismiss()
         }
-
-    }
-
-    // 상대방이 현재 채팅방에 접속해있는지(채팅방 activity를 보는 상태인지) 상태 값을 메소드
-    private fun getOpponentOnlineState() {
-        opponentRef = db.getReference("ChattingRoom").child(chatRoomKey).child("users")
-
-        opponentListener = object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                for (data in snapshot.children) {
-                    if (data.key == opponentUser.uid) {
-                        opponentUserOnlineState = data.getValue<ChattingState>()!!.onlineState
-                    }
-                }
-            }
-
-            override fun onCancelled(error: DatabaseError) {
-            }
-        }
-
-        opponentRef.addValueEventListener(opponentListener)
     }
 
     private fun showChattingRoomQuitDialog() {
@@ -324,7 +241,7 @@ class ChattingRoomActivity : AppCompatActivity() {
                 // 채팅방을 삭제하는 과정에서 onDestroy 콜백에 존재하는 채팅방 상태 변경 코드를
                 // 실행하지 않기 위함(flag를 변경하지 않으면 삭제된 채팅방에 대한 상태 값(쓰레기 값)을 DB에 저장함)
                 finishCheck = false
-                chattingRoomAvailableCheck(chatRoomKey)
+                chattingRoomAvailableCheck()
                 finish()
             }
             .setNegativeButton("취소") { dialog, _ ->
@@ -353,41 +270,37 @@ class ChattingRoomActivity : AppCompatActivity() {
     }
 
     // 채팅방의 온라인 상태를 바꾸는 메소드
-    // 이 메소드는 사용자의 채팅방 참여 상태를 관리하는 joinState
-    // 메세지 전송시 읽은 상태 값을 관리 하기 위한 state(유저가 채팅방에 들어와 있는지)
-    // joinState, state 두 상태 값을 DB에 저장함
     private fun changeOnlineState(state: Boolean) {
-        db.getReference("ChattingRoom")
-            .child(chatRoomKey).child("users")
-            .child(uid).setValue(ChattingState(joinState, state))
+        viewModel.changeOnlineState(chatRoomKey, ChattingState(joinState, state))
     }
 
     // 채팅방이 유효한지(참여한 유저가 존재하는지) 확인하는 메소드
-    // 유효하지 않다면 DB에서 해당 채팅방을 삭제함
-    private fun chattingRoomAvailableCheck(roomKey: String) {
-        db.getReference("ChattingRoom").child(roomKey)
-            .child("users").addListenerForSingleValueEvent(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    var total = 0
-                    var check = 0
+    private fun chattingRoomAvailableCheck() {
+        viewModel.chattingRoomAvailableCheck(chatRoomKey)
+    }
 
-                    for (data in snapshot.children) {
-                        val stateData = data.getValue<ChattingState>()
-                        if (!stateData!!.joinState) {
-                            check++
-                        }
-                        total++
-                    }
-                    // total 값은 채팅방에 존재하는 유저의 수
-                    // check 값은 채팅방에서 나간 유저의 수
-                    // 총 유저의 수와 나간 유저의 수가 같으면 DB에서 채팅방을 삭제함
-                    if (total == check) {
-                        db.getReference("ChattingRoom").child(roomKey).removeValue()
-                    }
+    // 소프트 키보드가 활성화된 상태에서 다른곳 터치시 소프트 키보드를 비활성화함
+    override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
+        if (ev?.action == MotionEvent.ACTION_DOWN) {
+            // 사용자가 터치시 터치한 View의 포커스가 messageInput(EditText) 이면 코드 실행
+            if (currentFocus == messageInput) {
+                // messageRect가 초기화된 상태가 아니면(최초 1회)
+                // 소프트 키보드가 활성화 된 상태에서
+                // 메세지 입력하는 EditText + 전송 버튼을 포함한 Constraint Bottom 의 위치값(x, y)을 저장
+                if (!::messageRect.isInitialized) {
+                    messageRect = Rect()
+                    binding.constraintBottom.getGlobalVisibleRect(messageRect)
                 }
 
-                override fun onCancelled(error: DatabaseError) {
+                // 소프트 키보드가 활성화된 상태에서의 ConstraintBottom 좌표를 바탕으로
+                // 터치 이벤트가 발생한 지점이 해당 레이아웃 밖이면 소프트 키보드를 숨기고, EditText의 포커스를 제거
+                if (!messageRect.contains(ev.x.toInt(), ev.y.toInt())) {
+                    inputMethodManager.hideSoftInputFromWindow(this.currentFocus?.windowToken, 0)
+                    messageInput.clearFocus()
                 }
-            })
+            }
+        }
+
+        return super.dispatchTouchEvent(ev)
     }
 }
