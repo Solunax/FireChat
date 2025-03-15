@@ -49,7 +49,7 @@ class ChattingRoomActivity : AppCompatActivity() {
     private lateinit var chatRoomKey: String
     private lateinit var inputMethodManager: InputMethodManager
     private lateinit var loadingDialog: LoadingDialog
-    lateinit var messageRecyclerView: RecyclerView
+    private lateinit var messageRecyclerView: RecyclerView
     private lateinit var messageRect: Rect
     private val viewModel: ChattingViewModel by viewModels()
     private var finishCheck = true
@@ -67,7 +67,8 @@ class ChattingRoomActivity : AppCompatActivity() {
         initProperty()
         initView()
         initListener()
-        setChattingRoom()
+        setRecycler()
+        initObserver()
 
         onBackPressedDispatcher.addCallback(this, backPressedCallback)
     }
@@ -79,7 +80,7 @@ class ChattingRoomActivity : AppCompatActivity() {
         super.onDestroy()
         backPressedCallback.isEnabled = false
 
-        viewModel.removeListener()
+        viewModel.removeListener(chatRoomKey)
         messageRecyclerView.adapter = null
 
         if (finishCheck) {
@@ -99,15 +100,6 @@ class ChattingRoomActivity : AppCompatActivity() {
             intent.getSerializableExtra("opponent", User::class.java)!!
         } else {
             intent.getSerializableExtra("opponent") as User
-        }
-
-        viewModel.opponentOnlineState.observe(this) { state ->
-            opponentUserOnlineState = state
-        }
-
-        viewModel.chatRoomKey.observe(this) { key ->
-            chatRoomKey = key
-            setRecycler()
         }
 
         viewModel.getOpponentUserOnlineState(chatRoomKey, opponentUser.uid!!)
@@ -134,6 +126,18 @@ class ChattingRoomActivity : AppCompatActivity() {
         drawerUserListView = drawer.chattingRoomDrawerUserList
         quitButton = drawer.chattingRoomDrawerQuitButton
         setDrawerUserList()
+    }
+
+    private fun initObserver() {
+        viewModel.opponentOnlineState.observe(this) { state ->
+            opponentUserOnlineState = state
+        }
+
+        viewModel.messages.observe(this) { messages ->
+            (messageRecyclerView.adapter as ChattingRoomRecyclerAdapter).submitList(messages) {
+                messageRecyclerView.scrollToPosition(messages.size - 1)
+            }
+        }
     }
 
     // 드로어에 현재 채팅방 참여자를 설정하는 함수
@@ -194,14 +198,6 @@ class ChattingRoomActivity : AppCompatActivity() {
         }
     }
 
-    private fun setChattingRoom() {
-        if (chatRoomKey.isBlank()) {
-            viewModel.setChattingRoomKey(uid, opponentUser.uid!!)
-        } else {
-            setRecycler()
-        }
-    }
-
     // 리사이클러 뷰에 어댑터를 할당하는 메소드
     // 이 시점에서 사용자가 채팅방을 보는 상태라는 것을 DB에 저장(changeOnlineState - state = true)
     private fun setRecycler() {
@@ -209,7 +205,14 @@ class ChattingRoomActivity : AppCompatActivity() {
             recyclerInitialize = true
 
             messageRecyclerView.layoutManager = LinearLayoutWrapper(this)
-            messageRecyclerView.adapter = ChattingRoomRecyclerAdapter(this, chatRoomKey)
+            val adapter = ChattingRoomRecyclerAdapter(this,
+                deleteMessage = { messageKey ->
+                    viewModel.deleteMessage(chatRoomKey, messageKey)
+                },
+                changeReadState = { messageKey ->
+                    viewModel.changeReadState(chatRoomKey, messageKey)
+                })
+            messageRecyclerView.adapter = adapter
             changeOnlineState(true)
 
             // 소프트 키보드 사용시 리사이클러 뷰의 마지막 항목을 표시하는 기능을 수행
@@ -224,7 +227,7 @@ class ChattingRoomActivity : AppCompatActivity() {
                     }
                 }
             }
-
+            viewModel.loadMessage(chatRoomKey)
             loadingDialog.dismiss()
         }
     }

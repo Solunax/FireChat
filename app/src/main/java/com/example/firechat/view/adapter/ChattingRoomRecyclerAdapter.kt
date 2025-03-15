@@ -14,23 +14,13 @@ import com.example.firechat.databinding.MessageMyItemBinding
 import com.example.firechat.databinding.MessageOpponentItemBinding
 import com.example.firechat.model.data.ChattingRoomTimeData
 import com.example.firechat.model.data.CurrentUserData
-import com.example.firechat.view.activity.ChattingRoomActivity
-import com.google.firebase.database.ChildEventListener
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.getValue
 import java.lang.StringBuilder
 
 class ChattingRoomRecyclerAdapter(
     private val context: Context,
-    var chattingRoomKey: String
+    private val deleteMessage: (String) -> Unit,
+    private val changeReadState: (String) -> Unit
 ) : ListAdapter<Pair<String, Message>, RecyclerView.ViewHolder>(DataComparator) {
-    private val messageData = LinkedHashMap<String, Message>()
-    private var messageKey = emptyList<String>()
-    private var messageBody = emptyList<Message>()
-    private val db = FirebaseDatabase.getInstance()
-    private val recyclerView = (context as ChattingRoomActivity).messageRecyclerView
 
     // 데이터 셋을 받아 차이를 계산
     // areItemsTheSame은 두 객체가 동일객체인지 확인
@@ -52,72 +42,9 @@ class ChattingRoomRecyclerAdapter(
         }
     }
 
-    init {
-        setMessage()
-    }
-
-    // 인스턴스 생성시 수행되는 메소드로
-    // 현재 채팅방에 저장된 메세지들을 가져오는 메소드
-    // 기존 ValueEventListener에서 ChildEventListener로 변경
-    // 기존 코드에선 DB에 이벤트가 발생할 때 마다 모든 값을 새로 가져왔지만,
-    // ChildEventListener는 모든 값이 아닌 [추가, 변경, 삭제, 이동]된 값만 가져오기 때문에 더 효율적이라 판단함
-    private fun setMessage() {
-        db.getReference("ChattingRoom")
-            .child(chattingRoomKey).child("messages")
-            .addChildEventListener(object : ChildEventListener {
-                // 채팅방에 입장시 최초 1회는 모든 값을 가져와 messageKey, allMessage 배열을 채움
-                // 최초 설정 이후 새로 추가된 값만 가져옴
-                override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
-                    messageData[snapshot.key!!] = snapshot.getValue<Message>()!!
-                    messageKey = messageData.keys.toList()
-                    messageBody = messageData.values.toList()
-
-                    // 사용자가 가장 최근에 온 메세지를 확인할 수 있게 스크롤
-                    // Coroutine의 async와 await를 사용하여 리스트 갱신이 끝날때 까지 대기함
-                    // 리스트 갱신이 완전히 끝나면 마지막 메시지로 스크롤함
-                    submitList(messageData.toList()) {
-                        recyclerView.scrollToPosition(itemCount - 1)
-                    }
-                }
-
-                // 메세지 읽음 상태 변경시 호출됨
-                // 메세지를 읽지 않음 상태에서 읽음 상태로 변경됐을 경우 호출
-                // snapshot으로 가져온 Message Key값으로 해당 메세지 정보의 confirmed 값을 수정
-                override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
-                    val newData = LinkedHashMap<String, Message>()
-                    messageData.forEach {
-                        newData[it.key] = it.value.copy()
-                    }
-
-                    newData[snapshot.key]?.confirmed = true
-                    submitList(newData.toList()){
-                        messageData[snapshot.key]!!.confirmed = true
-                        messageBody = messageData.values.toList()
-                    }
-                }
-
-                // 유저가 메세지를 삭제할 때 호출됨
-                // 가져온 Key, Messsage를 바탕으로 기존 배열에 존재하던 Key, Message 인스턴스를 삭제
-                override fun onChildRemoved(snapshot: DataSnapshot) {
-                    messageData.remove(snapshot.key)
-
-                    messageKey = messageData.keys.toList()
-                    messageBody = messageData.values.toList()
-
-                    submitList(messageData.toList())
-                }
-
-                override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {
-                }
-
-                override fun onCancelled(error: DatabaseError) {
-                }
-            })
-    }
-
     // 메세지를 누가 보냈느냐에 따라서 내용을 분리하는 메소드
     override fun getItemViewType(position: Int): Int {
-        return if (messageBody[position].senderUid == CurrentUserData.uid) {
+        return if (getItem(position).second.senderUid == CurrentUserData.uid) {
             1
         } else {
             0
@@ -146,15 +73,12 @@ class ChattingRoomRecyclerAdapter(
 
     // 메세지를 전송한 사람이 누구인지에 따라서 My, Opponent 분리
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        if (messageBody[position].senderUid == CurrentUserData.uid) {
-            (holder as MyMessageViewHolder).bind()
-        } else {
-            (holder as OpponentMessageViewHolder).bind()
+        val (key, message) = getItem(position)
+        if (holder is MyMessageViewHolder) {
+            holder.bind(key, message)
+        } else if (holder is OpponentMessageViewHolder) {
+            holder.bind(key, message)
         }
-    }
-
-    override fun getItemCount(): Int {
-        return messageData.size
     }
 
     inner class MyMessageViewHolder(binding: MessageMyItemBinding) :
@@ -164,11 +88,8 @@ class ChattingRoomRecyclerAdapter(
         private val readCheck = binding.messageRead
 
         // 현재 메세지의 내용, 전송 시간, 읽기 여부를 리사이클러 뷰 Item에 표시
-        fun bind() {
-            val message = messageBody[adapterPosition]
-            val sendDate = message.sendingDate
-
-            date.text = getDateText(sendDate)
+        fun bind(messageKey: String, message: Message) {
+            date.text = getDateText(message.sendingDate)
             messageContent.text = message.content
 
             if (message.confirmed) {
@@ -185,8 +106,7 @@ class ChattingRoomRecyclerAdapter(
                     .setTitle("메세지 삭제")
                     .setMessage("해당 메세지를 삭제하시겠습니까?")
                     .setPositiveButton("네") { _, _ ->
-                        db.getReference("ChattingRoom").child(chattingRoomKey)
-                            .child("messages").child(messageKey[adapterPosition]).removeValue()
+                        deleteMessage(messageKey)
                     }
                     .setNegativeButton("아니요") { dialog, _ ->
                         dialog.dismiss()
@@ -204,11 +124,8 @@ class ChattingRoomRecyclerAdapter(
         private val readCheck = binding.messageRead
 
         // 현재 메세지의 내용, 전송 시간, 읽기 여부를 리사이클러 뷰 Item에 표시
-        fun bind() {
-            val message = messageBody[adapterPosition]
-            val sendDate = message.sendingDate
-
-            date.text = getDateText(sendDate)
+        fun bind(messageKey: String, message: Message) {
+            date.text = getDateText(message.sendingDate)
             messageContent.text = message.content
 
             if (message.confirmed) {
@@ -217,16 +134,12 @@ class ChattingRoomRecyclerAdapter(
                 readCheck.visibility = View.VISIBLE
             }
 
-            setReadState(message, adapterPosition)
+            setReadState(messageKey, message)
         }
 
         // 사용자가 메세지를 읽었다는 State 값을 변경하는 메소드
-        private fun setReadState(message: Message, position: Int) {
-            db.getReference("ChattingRoom")
-                .child(chattingRoomKey).child("messages")
-                .child(messageKey[position]).child("confirmed")
-                .setValue(true)
-
+        private fun setReadState(messageKey: String, message: Message) {
+            changeReadState(messageKey)
             message.confirmed = true
             readCheck.visibility = View.GONE
         }

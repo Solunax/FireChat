@@ -1,7 +1,9 @@
 package com.example.firechat.model.repository
 
+import androidx.lifecycle.MutableLiveData
 import com.example.firechat.model.data.ChattingState
 import com.example.firechat.model.data.Message
+import com.google.firebase.database.ChildEventListener
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
@@ -10,33 +12,59 @@ import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.getValue
 
 class ChattingRoomRepository(private val db: FirebaseDatabase = FirebaseDatabase.getInstance()) {
-    lateinit var reference: DatabaseReference
-    lateinit var stateListener: ValueEventListener
+    private lateinit var reference: DatabaseReference
+    private lateinit var messageListener: ChildEventListener
+    private lateinit var stateListener: ValueEventListener
+    val messageLiveData: MutableLiveData<LinkedHashMap<String, Message>> =
+        MutableLiveData(LinkedHashMap())
 
-    // 채팅 목록을 가져온 뒤, 현재 사용자와 원하는 상대방으로 구성된 채팅방 Key를 찾음
-    fun getChattingRoomKey(
-        uid: String,
-        opponentUser: String,
-        onResult: (String?) -> Unit
-    ) {
-        db.getReference("ChattingRoom")
-            .orderByChild("users/$opponentUser/joinState").equalTo(true)
-            .addListenerForSingleValueEvent(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    for (data in snapshot.children) {
-                        val userData = data.child("users").value.toString()
-                        if (userData.contains(uid) && userData.contains(opponentUser)) {
-                            onResult(data.key)
-                            return
-                        }
+    fun getChattingRoomMessage(chatRoomKey: String) {
+        messageLiveData.value = LinkedHashMap()
+
+        val messageRef = db.getReference("ChattingRoom")
+            .child(chatRoomKey).child("messages")
+
+        if (::messageListener.isInitialized) {
+            messageRef.removeEventListener(messageListener)
+        }
+
+        messageListener = object : ChildEventListener {
+            override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
+                val currentMap = messageLiveData.value ?: LinkedHashMap()
+                snapshot.key?.let { key ->
+                    snapshot.getValue(Message::class.java)?.let { message ->
+                        currentMap[key] = message
+                        messageLiveData.value = currentMap
                     }
-                    onResult(null)
                 }
+            }
 
-                override fun onCancelled(error: DatabaseError) {
-                    onResult(null)
+            override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
+                val currentMap = messageLiveData.value ?: LinkedHashMap()
+                snapshot.key?.let { key ->
+                    snapshot.getValue(Message::class.java)?.let { message ->
+                        currentMap[key] = message
+                        messageLiveData.value = currentMap
+                    }
                 }
-            })
+            }
+
+            override fun onChildRemoved(snapshot: DataSnapshot) {
+                val currentMap = messageLiveData.value ?: LinkedHashMap()
+                snapshot.key?.let {
+                    currentMap.remove(snapshot.key)
+                    messageLiveData.value = currentMap
+                }
+            }
+
+            override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+            }
+        }
+
+        messageRef.addChildEventListener(messageListener)
     }
 
     // 메세지 보내기 메소드
@@ -58,6 +86,20 @@ class ChattingRoomRepository(private val db: FirebaseDatabase = FirebaseDatabase
             .addOnFailureListener { onFailure(it) }
     }
 
+    fun changeReadState(chattingRoomKey: String, messageKey: String) {
+        db.getReference("ChattingRoom")
+            .child(chattingRoomKey).child("messages")
+            .child(messageKey).child("confirmed")
+            .setValue(true)
+    }
+
+    fun deleteMessage(chattingRoomKey: String, messageKey: String) {
+        db.getReference("ChattingRoom")
+            .child(chattingRoomKey).child("messages")
+            .child(messageKey)
+            .removeValue()
+    }
+
     // 채팅방의 온라인 상태를 바꾸는 메소드
     // 이 메소드는 사용자의 채팅방 참여 상태를 관리하는 joinState
     // 메세지 전송시 읽은 상태 값을 관리 하기 위한 state(유저가 채팅방에 들어와 있는지)
@@ -71,7 +113,11 @@ class ChattingRoomRepository(private val db: FirebaseDatabase = FirebaseDatabase
     }
 
     // 상대방이 현재 채팅방에 들어와있는 상태인지 상태값을 가져오는 메소드
-    fun getOpponentUserOnlineState(chatRoomKey: String, opponentUid: String, onStateChanged: (Boolean) -> Unit) {
+    fun getOpponentUserOnlineState(
+        chatRoomKey: String,
+        opponentUid: String,
+        onStateChanged: (Boolean) -> Unit
+    ) {
         reference = db.getReference("ChattingRoom").child(chatRoomKey).child("users")
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
@@ -115,7 +161,11 @@ class ChattingRoomRepository(private val db: FirebaseDatabase = FirebaseDatabase
             })
     }
 
-    fun removeListener() {
+    fun removeListener(chattingRoomKey: String) {
+        db.getReference("ChattingRoom")
+            .child(chattingRoomKey)
+            .child("messages")
+            .removeEventListener(messageListener)
         reference.removeEventListener(stateListener)
     }
 }
