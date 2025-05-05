@@ -24,6 +24,7 @@ import com.example.firechat.service.TaskRemoveService
 import com.example.firechat.util.*
 import com.example.firechat.view.adapter.ChattingListRecyclerAdapter
 import com.example.firechat.view.dialog.LoadingDialog
+import com.example.firechat.viewModel.ChattingListViewModel
 import com.example.firechat.viewModel.ViewModel
 
 class HomeActivity : AppCompatActivity() {
@@ -34,26 +35,29 @@ class HomeActivity : AppCompatActivity() {
     private lateinit var drawerProfile: ImageButton
     private lateinit var newChatButton: ImageButton
     private lateinit var logoutButton: ImageButton
-    lateinit var chattingRoomRecycler: RecyclerView
+    private lateinit var chattingRoomRecycler: RecyclerView
     private lateinit var loadingDialog: LoadingDialog
 
     private var lastBackPressedTime = 0L
-    private val viewModel: ViewModel by viewModels()
+    private val userViewModel: ViewModel by viewModels()
+    private val chattingListViewModel: ChattingListViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = HomeActivityBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        initProperty()
         initView()
         initListener()
         setRecycler()
+        initObserver()
 
-        viewModel.getProfileImage()
+        userViewModel.getProfileImage()
 
         // 뒤로가기 버튼 클릭 콜백 연결
         onBackPressedDispatcher.addCallback(this, backPressedCallback)
+
+        chattingListViewModel.getChattingRoomsData()
 
         // 앱 강제종료시 Firebase 로그아웃을 위한 서비스 시작
         startService(Intent(this, TaskRemoveService::class.java))
@@ -62,13 +66,14 @@ class HomeActivity : AppCompatActivity() {
     // 메모리 누수 방지를 위해 Destory시 콜백을 비활성화
     override fun onDestroy() {
         super.onDestroy()
+        chattingListViewModel.removeListener()
         backPressedCallback.isEnabled = false
         chattingRoomRecycler.adapter = null
     }
 
-    private fun initProperty() {
+    private fun initObserver() {
         // 프로필 이미지 신규 등록 / 갱신시 사용되는 observer
-        viewModel.profileImageUri.observe(this) { uri ->
+        userViewModel.profileImageUri.observe(this) { uri ->
             if (uri != null) {
                 // 프로필 이미지가 변경되면 드로어 프로필 이미지 영역에 이미지 갱신
                 Glide.with(this)
@@ -81,9 +86,17 @@ class HomeActivity : AppCompatActivity() {
         }
 
         // 프로필 이미지 로드 실패시 사용되는 observer
-        viewModel.event.observe(this) { event ->
+        userViewModel.event.observe(this) { event ->
             event.getContentIfNotHandled()?.let { message ->
                 showText(this, message)
+            }
+        }
+
+        chattingListViewModel.chattingRoomData.observe(this) { chattingRoom ->
+            val adapter = chattingRoomRecycler.adapter as? ChattingListRecyclerAdapter
+            adapter?.submitList(null)
+            adapter?.submitList(chattingRoom) {
+                chattingRoomRecycler.scrollToPosition(0)
             }
         }
     }
@@ -138,7 +151,7 @@ class HomeActivity : AppCompatActivity() {
                     loadingDialog.show()
                     val uri = result.data?.data
                     if (uri != null) {
-                        viewModel.uploadProfileImage(uri)
+                        userViewModel.uploadProfileImage(uri)
                     }
                 }
             }
@@ -147,11 +160,30 @@ class HomeActivity : AppCompatActivity() {
     // 리사이클러 뷰를 초기화하는 메소드
     // decoration을 사용해 Item에 구분선을 추가함
     private fun setRecycler() {
+        val adapter = ChattingListRecyclerAdapter(
+            chattingRoomSelected = { (opponentUser, key) ->
+                val intent = Intent(this, ChattingRoomActivity::class.java)
+                intent.putExtra("opponent", opponentUser)
+                intent.putExtra("chatRoomKey", key)
+
+                startActivity(intent)
+            },
+            chattingRoomLongClick = { key ->
+                AlertDialog.Builder(this)
+                    .setTitle("채팅방 나가기")
+                    .setMessage("채팅방에서 나가시겠습니까?")
+                    .setPositiveButton("확인") { _, _ ->
+                        chattingListViewModel.quitChattingRoom(key)
+                    }
+                    .setNegativeButton("취소") { dialog, _ ->
+                        dialog.dismiss()
+                    }.show()
+            }
+        )
+
         chattingRoomRecycler.layoutManager = LinearLayoutManager(this)
         val decoration = DividerItemDecoration(applicationContext, DividerItemDecoration.VERTICAL)
         chattingRoomRecycler.addItemDecoration(decoration)
-
-        val adapter = ChattingListRecyclerAdapter(this)
         adapter.setHasStableIds(true)
         chattingRoomRecycler.setHasFixedSize(true)
         chattingRoomRecycler.recycledViewPool.setMaxRecycledViews(0, 0)
@@ -166,7 +198,7 @@ class HomeActivity : AppCompatActivity() {
             .setMessage("로그아웃 하시겠습니까?")
             .setPositiveButton("확인") { dialog, _ ->
                 // View Model의 로그아웃 메소드 호출 후 로그인 화면으로 돌아감
-                viewModel.logout()
+                userViewModel.logout()
                 startActivity(Intent(this, LoginActivity::class.java))
                 dialog.dismiss()
                 finish()
